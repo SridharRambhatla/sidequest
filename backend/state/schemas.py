@@ -95,6 +95,131 @@ class CollisionSuggestion(BaseModel):
     why: str
 
 
+# ──────────────────────────────────────────────
+# Discovery API Models (for /api/discover)
+# ──────────────────────────────────────────────
+
+class Coordinates(BaseModel):
+    """Geographic coordinates."""
+    lat: float
+    lng: float
+
+
+class ExperienceLocation(BaseModel):
+    """Location details for a discovery experience."""
+    neighborhood: str
+    coordinates: Coordinates
+
+
+class ExperienceTiming(BaseModel):
+    """Timing details for a discovery experience."""
+    type: str = Field(default="flexible", description="flexible, scheduled, or time_sensitive")
+    duration_hours: float = 2.0
+    advance_booking_required: bool = False
+    advance_days_minimum: Optional[int] = None
+
+
+class ExperienceBudget(BaseModel):
+    """Budget range for an experience."""
+    min: int
+    max: int
+    currency: str = "INR"
+
+
+class SoloFriendly(BaseModel):
+    """Solo-friendliness assessment."""
+    is_solo_sure: bool
+    confidence_score: float = Field(default=0.8, ge=0.0, le=1.0)
+
+
+class CrowdLevel(BaseModel):
+    """Current crowd level assessment."""
+    current: str = Field(default="moderate", description="low, moderate, or high")
+    updated_at: str
+
+
+class WeatherSuitability(BaseModel):
+    """Weather suitability for the experience."""
+    indoor: bool
+    outdoor: bool
+    current_match: str = Field(default="good", description="perfect, good, fair, or poor")
+
+
+class Availability(BaseModel):
+    """Current availability status."""
+    status: str = Field(default="available", description="available, limited, or sold_out")
+    urgency_level: str = Field(default="low", description="low, medium, or high")
+
+
+class DiscoveryExperienceResponse(BaseModel):
+    """A single discovery experience with full metadata for the explore page."""
+    
+    id: str
+    name: str
+    category: str
+    description_short: str
+    image_url: str
+    location: ExperienceLocation
+    timing: ExperienceTiming
+    operating_days: list[str] = Field(default_factory=lambda: ["daily"])
+    operating_hours: Optional[str] = None
+    budget: ExperienceBudget
+    solo_friendly: SoloFriendly
+    crowd_level: CrowdLevel
+    weather_suitability: WeatherSuitability
+    availability: Availability
+    rating: Optional[float] = None
+    review_count: Optional[int] = None
+    bookmarked: bool = False
+
+
+class DiscoverRequest(BaseModel):
+    """Request body for discovery endpoint."""
+    
+    query: Optional[str] = Field(
+        default=None,
+        description="Optional search query to filter experiences"
+    )
+    city: str = Field(
+        default="Bangalore",
+        description="Target city for experiences"
+    )
+    categories: list[str] = Field(
+        default_factory=list,
+        description="Filter by categories (e.g., ['Food & Drink', 'Nature'])"
+    )
+    budget_min: int = Field(
+        default=0,
+        description="Minimum budget in INR"
+    )
+    budget_max: int = Field(
+        default=10000,
+        description="Maximum budget in INR"
+    )
+    time_of_day: Optional[str] = Field(
+        default=None,
+        description="Filter by time: morning, afternoon, evening, night"
+    )
+    solo_friendly_only: bool = Field(
+        default=False,
+        description="Only return solo-friendly experiences"
+    )
+    limit: int = Field(
+        default=12,
+        ge=1,
+        le=50,
+        description="Maximum number of experiences to return"
+    )
+
+
+class DiscoverResponse(BaseModel):
+    """Response body for discovery endpoint."""
+    
+    experiences: list[DiscoveryExperienceResponse]
+    total_count: int
+    filters_applied: dict[str, Any] = Field(default_factory=dict)
+
+
 class ItineraryResponse(BaseModel):
     """Response body for itinerary generation."""
 

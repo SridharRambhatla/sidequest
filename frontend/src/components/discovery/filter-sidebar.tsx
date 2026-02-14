@@ -153,7 +153,7 @@ export function FilterSidebar({
               )}
               onClick={() => updateFilter('crowdPreference', option.value)}
             >
-              {option.icon && <span className="mr-1">{option.icon}</span>}
+              {'icon' in option && <span className="mr-1">{option.icon}</span>}
               {option.label}
             </Button>
           ))}

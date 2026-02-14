@@ -171,16 +171,27 @@ export default function GeneratePage() {
             </div>
 
             {/* Query summary */}
-            <Card className="mt-8 bg-muted/30 border-0">
-              <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground mb-1">Creating itinerary for:</p>
-                <p className="font-medium">
+            <Card className="mt-8 border border-border/50 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-sm">
+              <CardContent className="p-5">
+                <p className="text-sm text-muted-foreground mb-2 font-medium">Creating itinerary for:</p>
+                <p className="font-semibold text-lg text-foreground">
                   {formState.query || `Experiences from ${formState.socialMediaUrls.length} social media link(s)`}
                 </p>
-                <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
-                  <span>📍 {formState.city}</span>
-                  <span>💰 ₹{formState.budgetMin.toLocaleString('en-IN')} - ₹{formState.budgetMax.toLocaleString('en-IN')}</span>
-                  {formState.soloPreference && <span>👤 Solo-friendly</span>}
+                <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-border/30">
+                  <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground bg-background/50 px-2.5 py-1 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    {formState.city}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground bg-background/50 px-2.5 py-1 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
+                    ₹{formState.budgetMin.toLocaleString('en-IN')} - ₹{formState.budgetMax.toLocaleString('en-IN')}
+                  </span>
+                  {formState.soloPreference && (
+                    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground bg-background/50 px-2.5 py-1 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                      Solo-friendly
+                    </span>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -14,9 +14,11 @@ import {
   IndianRupee,
   Clock,
   Navigation,
+  Wallet,
 } from 'lucide-react';
 import { InteractiveTimeline } from '@/components/timeline';
-import { ItineraryResponse, ExperienceItem } from '@/lib/types';
+import { BudgetBreakdown } from '@/components/budget-breakdown';
+import { ItineraryResponse, ExperienceItem, InputFormState } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -33,15 +35,21 @@ const ItineraryMap = dynamic(() => import('@/components/google-map'), {
 export default function ResultsPage() {
   const router = useRouter();
   const [itinerary, setItinerary] = useState<ItineraryResponse | null>(null);
+  const [formState, setFormState] = useState<InputFormState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [focusedExperience, setFocusedExperience] = useState<number | null>(null);
   const [showMobileMap, setShowMobileMap] = useState(false);
+  const [showMobileBudget, setShowMobileBudget] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem('sidequest-result');
+    const storedForm = sessionStorage.getItem('sidequest-form');
     if (stored) {
       try {
         setItinerary(JSON.parse(stored));
+        if (storedForm) {
+          setFormState(JSON.parse(storedForm));
+        }
       } catch {
         router.push('/');
       }
@@ -170,29 +178,76 @@ export default function ResultsPage() {
             />
           </div>
 
-          {/* Budget footer */}
-          <Card className="m-4 mt-0">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-muted-foreground">Total budget</span>
-                <span className="text-lg font-semibold">
-                  ₹{totalBudget.toLocaleString('en-IN')}
-                </span>
-              </div>
-              <Button className="w-full" onClick={() => toast.info('Booking coming soon')}>
+          {/* Budget Breakdown - Desktop */}
+          {itinerary.budget_breakdown && itinerary.budget_breakdown.breakdown?.length > 0 ? (
+            <div className="m-4 mt-0 max-h-[45%] overflow-y-auto">
+              <BudgetBreakdown
+                budget={itinerary.budget_breakdown}
+                targetBudget={{
+                  min: formState?.budgetMin || 200,
+                  max: formState?.budgetMax || 5000,
+                }}
+              />
+              <Button className="w-full mt-3" onClick={() => toast.info('Booking coming soon')}>
                 Book experiences
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          ) : (
+            <Card className="m-4 mt-0">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-muted-foreground">Total budget</span>
+                  <span className="text-lg font-semibold">
+                    ₹{totalBudget.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <Button className="w-full" onClick={() => toast.info('Booking coming soon')}>
+                  Book experiences
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
+
+      {/* Mobile Budget Sheet */}
+      <Sheet open={showMobileBudget} onOpenChange={setShowMobileBudget}>
+        <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
+          {itinerary.budget_breakdown && itinerary.budget_breakdown.breakdown?.length > 0 ? (
+            <div className="pt-4">
+              <BudgetBreakdown
+                budget={itinerary.budget_breakdown}
+                targetBudget={{
+                  min: formState?.budgetMin || 200,
+                  max: formState?.budgetMax || 5000,
+                }}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <IndianRupee className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">Budget details not available</p>
+              <p className="text-2xl font-bold mt-2">₹{totalBudget.toLocaleString('en-IN')}</p>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Mobile footer */}
       <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-background border-t border-border/50 p-3">
         <div className="flex gap-2 max-w-md mx-auto">
-          <Button variant="outline" className="flex-1" onClick={() => setShowMobileMap(true)}>
-            <MapIcon className="h-4 w-4 mr-1.5" />
-            Map
+          <Button variant="outline" size="sm" onClick={() => setShowMobileMap(true)}>
+            <MapIcon className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowMobileBudget(true)}
+            className={cn(
+              itinerary.budget_breakdown && !itinerary.budget_breakdown.within_budget && 'border-destructive text-destructive'
+            )}
+          >
+            <Wallet className="h-4 w-4" />
           </Button>
           <Button className="flex-1" onClick={() => toast.info('Booking coming soon')}>
             Book · ₹{totalBudget.toLocaleString('en-IN')}
