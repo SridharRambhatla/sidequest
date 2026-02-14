@@ -1,0 +1,74 @@
+{
+  "session_id": "mock_20260214132555",
+  "timestamp": "2026-02-14T13:25:56.663918",
+  "experiences_count": 6,
+  "experiences": [
+    {
+      "name": "Clay Station Pottery Workshop",
+      "category": "craft",
+      "timing": "Weekday evenings 6-8 PM",
+      "budget": 1500,
+      "location": "Indiranagar, Bangalore",
+      "solo_friendly": true,
+      "source": "instagram_@claystation_blr",
+      "description": "Beginner-friendly pottery wheel session. Small batches of 4-6 people. Instructor Priya guides you through centering clay and shaping your first bowl. Take home your creation after firing.",
+      "lore": "Started by a former tech professional who quit to pursue ceramics full-time"
+    },
+    {
+      "name": "Third Wave Coffee Roasters - Koramangala",
+      "category": "food",
+      "timing": "Morning 8-11 AM for fresh roasts",
+      "budget": 400,
+      "location": "Koramangala, Bangalore",
+      "solo_friendly": true,
+      "source": "local_knowledge",
+      "description": "Single-origin pour-overs and espresso. Baristas explain bean origins. Community table perfect for solo visitors. Try the Chikmagalur estate beans.",
+      "lore": "One of India's first specialty coffee roasters, pioneered the third wave movement"
+    },
+    {
+      "name": "Jayanagar Walking Food Tour",
+      "category": "food",
+      "timing": "Saturday mornings 9 AM",
+      "budget": 800,
+      "location": "Jayanagar, Bangalore",
+      "solo_friendly": true,
+      "source": "blog_bangalorebites",
+      "description": "Heritage South Indian breakfast trail. Visit 5 iconic eateries: dosa, idli, filter coffee. Guide shares stories of 50-year-old establishments.",
+      "lore": "Covers restaurants that have been family-run for three generations"
+    },
+    {
+      "name": "Rangoli Metro Art Gallery",
+      "category": "art",
+      "timing": "Anytime during metro hours",
+      "budget": 50,
+      "location": "MG Road Metro Station, Bangalore",
+      "solo_friendly": true,
+      "source": "local_knowledge",
+      "description": "Free art installations in metro station. Rotating exhibits by local artists. Perfect for a quick cultural stop between activities.",
+      "lore": "Part of Namma Metro's initiative to make public transport spaces cultural hubs"
+    },
+    {
+      "name": "Cubbon Park Heritage Walk",
+      "category": "heritage",
+      "timing": "Sunday mornings 7 AM",
+      "budget": 200,
+      "location": "Cubbon Park, Bangalore",
+      "solo_friendly": true,
+      "source": "instagram_@bangalorewalks",
+      "description": "Guided walk through 150-year-old park. Learn about colonial architecture, rare trees, and park's role in city history. Group of 15-20 people.",
+      "lore": "Named after Sir Mark Cubbon, British commissioner who expanded the park in 1870s"
+    },
+    {
+      "name": "Atta Galatta Bookstore Cafe",
+      "category": "networking",
+      "timing": "Weekday afternoons 3-6 PM",
+      "budget": 300,
+      "location": "Koramangala, Bangalore",
+      "solo_friendly": true,
+      "source": "local_knowledge",
+      "description": "Independent bookstore with cafe. Regular author events and book clubs. Solo-friendly atmosphere with communal seating. Great for meeting fellow readers.",
+      "lore": "Founded by former Flipkart employees passionate about indie publishing"
+    }
+  ],
+  "note": "Mock data for testing"
+}
