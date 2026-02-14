@@ -11,7 +11,7 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from test_agents_mock import run_mock_workflow
+from test.test_agents_mock import run_mock_workflow
 
 
 def print_menu():
@@ -56,7 +56,7 @@ async def run_custom_test(params):
     # Import here to avoid circular imports
     from state.schemas import AgentState
     from datetime import datetime
-    from test_agents_mock import (
+    from test.test_agents_mock import (
         mock_discovery_agent,
         mock_cultural_context_agent,
         mock_community_agent,

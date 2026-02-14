@@ -24,8 +24,8 @@ import { BudgetBreakdown } from '@/components/budget-breakdown';
 import { ItineraryResponse, ExperienceItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-// Dynamically import the map component (Leaflet doesn't work with SSR)
-const ItineraryMap = dynamic(() => import('@/components/itinerary-map'), {
+// Dynamically import the map component (Google Maps doesn't work with SSR)
+const ItineraryMap = dynamic(() => import('@/components/google-map'), {
   ssr: false,
   loading: () => (
     <div className="h-full bg-muted flex items-center justify-center">

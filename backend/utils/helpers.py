@@ -98,3 +98,36 @@ def timer():
             return 0.0
 
     return Timer()
+
+
+def strip_markdown_json(content: str) -> str:
+    """
+    Strip markdown code fence wrappers from JSON content.
+    
+    LLM responses often wrap JSON in markdown code blocks like:
+    ```json
+    {"key": "value"}
+    ```
+    
+    This function removes those wrappers to get clean JSON.
+    
+    Args:
+        content: Raw LLM response that may contain markdown wrappers
+        
+    Returns:
+        Clean JSON string with markdown wrappers removed
+    """
+    content = content.strip()
+    
+    # Remove ```json prefix
+    if content.startswith("```json"):
+        content = content[7:]
+    # Remove plain ``` prefix (without language)
+    elif content.startswith("```"):
+        content = content[3:]
+    
+    # Remove ``` suffix
+    if content.endswith("```"):
+        content = content[:-3]
+    
+    return content.strip()

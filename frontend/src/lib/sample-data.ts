@@ -1,0 +1,480 @@
+/**
+ * Sample Experiences Data for Discovery Page Visualization
+ * Real Bangalore experiences with realistic data
+ */
+
+import { DiscoveryExperience } from './types';
+
+export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
+  {
+    id: 'exp-001',
+    name: 'CTR Benne Dosa at Malleshwaram',
+    category: 'Food & Drink',
+    description_short: 'Legendary 1920s dosa joint where locals queue 20+ minutes for buttery, crispy benne dosas. Counter seating makes for easy conversations.',
+    image_url: 'https://images.unsplash.com/photo-1630383249896-424e482df921?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Malleshwaram',
+      coordinates: { lat: 13.0067, lng: 77.5677 },
+    },
+    timing: {
+      type: 'flexible',
+      duration_hours: 1,
+      advance_booking_required: false,
+    },
+    budget: { min: 100, max: 200, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.95,
+    },
+    crowd_level: {
+      current: 'moderate',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: true,
+      outdoor: false,
+      current_match: 'perfect',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'low',
+    },
+    rating: 4.6,
+    review_count: 2847,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-002',
+    name: 'Pottery Workshop at Clay Station',
+    category: 'Craft Workshop',
+    description_short: 'Hands-on wheel throwing for beginners. 60% attendees come solo. Instructor facilitates introductions, messy creativity guaranteed.',
+    image_url: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Indiranagar',
+      coordinates: { lat: 12.9784, lng: 77.6408 },
+    },
+    timing: {
+      type: 'scheduled',
+      duration_hours: 2.5,
+      advance_booking_required: true,
+      advance_days_minimum: 2,
+    },
+    budget: { min: 1200, max: 1500, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.92,
+    },
+    crowd_level: {
+      current: 'low',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: true,
+      outdoor: false,
+      current_match: 'perfect',
+    },
+    availability: {
+      status: 'limited',
+      urgency_level: 'high',
+    },
+    rating: 4.8,
+    review_count: 456,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-003',
+    name: 'Cubbon Park Morning Run Club',
+    category: 'Fitness',
+    description_short: 'Free community run every Saturday 6AM. All paces welcome. Post-run chai and conversations at the bandstand.',
+    image_url: 'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Cubbon Park',
+      coordinates: { lat: 12.9763, lng: 77.5929 },
+    },
+    timing: {
+      type: 'scheduled',
+      duration_hours: 1.5,
+      advance_booking_required: false,
+    },
+    budget: { min: 0, max: 100, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.98,
+    },
+    crowd_level: {
+      current: 'moderate',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: false,
+      outdoor: true,
+      current_match: 'good',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'low',
+    },
+    rating: 4.9,
+    review_count: 1203,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-004',
+    name: 'Heritage Walk: Basavanagudi',
+    category: 'Heritage Walk',
+    description_short: 'Discover the Bull Temple, Dodda Ganesha, and 100-year-old homes. Walk through streets where Bangalore\'s old soul still breathes.',
+    image_url: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Basavanagudi',
+      coordinates: { lat: 12.9422, lng: 77.5675 },
+    },
+    timing: {
+      type: 'scheduled',
+      duration_hours: 3,
+      advance_booking_required: true,
+      advance_days_minimum: 1,
+    },
+    budget: { min: 500, max: 800, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.85,
+    },
+    crowd_level: {
+      current: 'low',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: false,
+      outdoor: true,
+      current_match: 'good',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'medium',
+    },
+    rating: 4.7,
+    review_count: 892,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-005',
+    name: 'Indian Coffee House',
+    category: 'Food & Drink',
+    description_short: 'Since 1958. Filter coffee and nostalgia in equal measure. Writers, dreamers, and solo thinkers have claimed these tables for decades.',
+    image_url: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'MG Road',
+      coordinates: { lat: 12.9757, lng: 77.6061 },
+    },
+    timing: {
+      type: 'flexible',
+      duration_hours: 1,
+      advance_booking_required: false,
+    },
+    budget: { min: 50, max: 150, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.97,
+    },
+    crowd_level: {
+      current: 'moderate',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: true,
+      outdoor: false,
+      current_match: 'perfect',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'low',
+    },
+    rating: 4.3,
+    review_count: 3421,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-006',
+    name: 'Atta Galatta Bookstore & Cafe',
+    category: 'Art & Culture',
+    description_short: 'Independent bookstore hosting poetry nights, book launches, and quiet reading corners. Coffee, books, and kindred spirits.',
+    image_url: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Koramangala',
+      coordinates: { lat: 12.9352, lng: 77.6245 },
+    },
+    timing: {
+      type: 'flexible',
+      duration_hours: 2,
+      advance_booking_required: false,
+    },
+    budget: { min: 200, max: 500, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.94,
+    },
+    crowd_level: {
+      current: 'low',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: true,
+      outdoor: false,
+      current_match: 'perfect',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'low',
+    },
+    rating: 4.5,
+    review_count: 1567,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-007',
+    name: 'Lalbagh Botanical Garden',
+    category: 'Nature',
+    description_short: '240 acres of century-old trees, the famous Glass House, and Sunday flower shows. Perfect for morning walks and botanical wonder.',
+    image_url: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Lalbagh',
+      coordinates: { lat: 12.9507, lng: 77.5848 },
+    },
+    timing: {
+      type: 'flexible',
+      duration_hours: 2,
+      advance_booking_required: false,
+    },
+    budget: { min: 20, max: 50, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.90,
+    },
+    crowd_level: {
+      current: 'moderate',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: false,
+      outdoor: true,
+      current_match: 'perfect',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'low',
+    },
+    rating: 4.4,
+    review_count: 8934,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-008',
+    name: 'Sofar Sounds Secret Concert',
+    category: 'Nightlife',
+    description_short: 'Location revealed 24hrs before. Intimate living room concerts with 50-80 music lovers. BYOB, no phones, pure music.',
+    image_url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Secret Location',
+      coordinates: { lat: 12.9716, lng: 77.5946 },
+    },
+    timing: {
+      type: 'time_sensitive',
+      duration_hours: 3,
+      advance_booking_required: true,
+      advance_days_minimum: 7,
+    },
+    budget: { min: 500, max: 800, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.88,
+    },
+    crowd_level: {
+      current: 'low',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: true,
+      outdoor: false,
+      current_match: 'perfect',
+    },
+    availability: {
+      status: 'limited',
+      urgency_level: 'high',
+    },
+    rating: 4.9,
+    review_count: 234,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-009',
+    name: 'Commercial Street Shopping',
+    category: 'Shopping',
+    description_short: 'Bangalore\'s oldest shopping street. Bargain for everything from fabric to footwear. Chaos, colors, and serious deals.',
+    image_url: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Shivajinagar',
+      coordinates: { lat: 12.9833, lng: 77.6073 },
+    },
+    timing: {
+      type: 'flexible',
+      duration_hours: 3,
+      advance_booking_required: false,
+    },
+    budget: { min: 500, max: 3000, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.75,
+    },
+    crowd_level: {
+      current: 'high',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: false,
+      outdoor: true,
+      current_match: 'good',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'low',
+    },
+    rating: 4.2,
+    review_count: 12453,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-010',
+    name: 'Sankey Tank Sunset Walk',
+    category: 'Nature',
+    description_short: 'Victorian-era lake in the heart of the city. Watch pelicans, spot painted storks, and catch golden hour reflections.',
+    image_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Sadashivanagar',
+      coordinates: { lat: 13.0108, lng: 77.5727 },
+    },
+    timing: {
+      type: 'flexible',
+      duration_hours: 1.5,
+      advance_booking_required: false,
+    },
+    budget: { min: 0, max: 20, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.93,
+    },
+    crowd_level: {
+      current: 'low',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: false,
+      outdoor: true,
+      current_match: 'perfect',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'low',
+    },
+    rating: 4.5,
+    review_count: 2341,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-011',
+    name: 'Bangalore Palace Tour',
+    category: 'Heritage Walk',
+    description_short: 'Tudor-style palace built in 1887. Wood carvings, stained glass, and royal history. Audio guide included.',
+    image_url: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Vasanth Nagar',
+      coordinates: { lat: 12.9988, lng: 77.5921 },
+    },
+    timing: {
+      type: 'scheduled',
+      duration_hours: 2,
+      advance_booking_required: false,
+    },
+    budget: { min: 230, max: 460, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.87,
+    },
+    crowd_level: {
+      current: 'moderate',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: true,
+      outdoor: true,
+      current_match: 'perfect',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'low',
+    },
+    rating: 4.1,
+    review_count: 5678,
+    bookmarked: false,
+  },
+  {
+    id: 'exp-012',
+    name: 'Ulsoor Lake Kayaking',
+    category: 'Fitness',
+    description_short: 'Urban kayaking at sunrise. Paddle through lotus beds while the city wakes up. Equipment and basic training included.',
+    image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=400&fit=crop',
+    location: {
+      neighborhood: 'Ulsoor',
+      coordinates: { lat: 12.9825, lng: 77.6200 },
+    },
+    timing: {
+      type: 'scheduled',
+      duration_hours: 2,
+      advance_booking_required: true,
+      advance_days_minimum: 1,
+    },
+    budget: { min: 800, max: 1200, currency: 'INR' },
+    solo_friendly: {
+      is_solo_sure: true,
+      confidence_score: 0.82,
+    },
+    crowd_level: {
+      current: 'low',
+      updated_at: new Date().toISOString(),
+    },
+    weather_suitability: {
+      indoor: false,
+      outdoor: true,
+      current_match: 'good',
+    },
+    availability: {
+      status: 'available',
+      urgency_level: 'medium',
+    },
+    rating: 4.6,
+    review_count: 389,
+    bookmarked: false,
+  },
+];
+
+// Categories for filtering
+export const EXPERIENCE_CATEGORIES = [
+  { id: 'all', label: 'All', icon: 'sparkles' },
+  { id: 'food', label: 'Food & Drink', icon: 'utensils' },
+  { id: 'craft', label: 'Workshops', icon: 'palette' },
+  { id: 'heritage', label: 'Heritage', icon: 'landmark' },
+  { id: 'fitness', label: 'Fitness', icon: 'heart' },
+  { id: 'art', label: 'Art & Culture', icon: 'theater' },
+  { id: 'nature', label: 'Nature', icon: 'trees' },
+  { id: 'nightlife', label: 'Nightlife', icon: 'music' },
+  { id: 'shopping', label: 'Shopping', icon: 'shopping-bag' },
+] as const;
+
+// Quick filter presets
+export const QUICK_FILTERS = [
+  { id: 'solo', label: 'Solo-friendly', icon: 'user' },
+  { id: 'under500', label: 'Under ₹500', icon: 'wallet' },
+  { id: 'tonight', label: 'Tonight', icon: 'moon' },
+  { id: 'weekend', label: 'This Weekend', icon: 'calendar' },
+  { id: 'outdoor', label: 'Outdoor', icon: 'sun' },
+  { id: 'free', label: 'Free', icon: 'gift' },
+] as const;

@@ -31,20 +31,6 @@ const agentIcons: Record<string, React.ElementType> = {
   budget: Wallet,
 };
 
-const statusColors: Record<AgentStatus, string> = {
-  waiting: 'text-muted-foreground bg-muted',
-  processing: 'text-primary bg-primary/10',
-  success: 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30',
-  error: 'text-destructive bg-destructive/10',
-};
-
-const statusBorderColors: Record<AgentStatus, string> = {
-  waiting: 'border-muted',
-  processing: 'border-primary',
-  success: 'border-green-500',
-  error: 'border-destructive',
-};
-
 function AgentCard({ agent }: { agent: AgentState }) {
   const Icon = agentIcons[agent.name] || Search;
   const isProcessing = agent.status === 'processing';
@@ -52,76 +38,63 @@ function AgentCard({ agent }: { agent: AgentState }) {
   const isError = agent.status === 'error';
 
   return (
-    <Card 
-      className={cn(
-        'relative overflow-hidden transition-all duration-300',
-        'border-2',
-        statusBorderColors[agent.status],
-        isProcessing && 'shadow-md shadow-primary/20'
-      )}
-    >
+    <Card className={cn(
+      'overflow-hidden transition-all duration-200',
+      isProcessing && 'border-primary/50'
+    )}>
       <CardContent className="p-4">
-        {/* Icon and status indicator */}
-        <div className="flex items-start justify-between mb-3">
-          <div 
-            className={cn(
-              'p-2 rounded-lg transition-colors',
-              statusColors[agent.status]
-            )}
-          >
+        {/* Icon and status */}
+        <div className="flex items-center justify-between mb-3">
+          <div className={cn(
+            'p-2 rounded-lg',
+            agent.status === 'waiting' && 'bg-muted text-muted-foreground',
+            agent.status === 'processing' && 'bg-primary/10 text-primary',
+            agent.status === 'success' && 'bg-secondary/20 text-secondary',
+            agent.status === 'error' && 'bg-destructive/10 text-destructive'
+          )}>
             {isProcessing ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : isSuccess ? (
-              <Check className="h-5 w-5" />
+              <Check className="h-4 w-4" />
             ) : isError ? (
-              <AlertCircle className="h-5 w-5" />
+              <AlertCircle className="h-4 w-4" />
             ) : (
-              <Icon className="h-5 w-5" />
+              <Icon className="h-4 w-4" />
             )}
           </div>
           
-          {/* Progress percentage */}
-          <span 
-            className={cn(
-              'text-sm font-medium',
-              agent.status === 'waiting' && 'text-muted-foreground',
-              agent.status === 'processing' && 'text-primary',
-              agent.status === 'success' && 'text-green-600 dark:text-green-400',
-              agent.status === 'error' && 'text-destructive'
-            )}
-          >
+          <span className={cn(
+            'text-xs font-medium',
+            agent.status === 'waiting' && 'text-muted-foreground',
+            agent.status === 'processing' && 'text-primary',
+            agent.status === 'success' && 'text-secondary',
+            agent.status === 'error' && 'text-destructive'
+          )}>
             {agent.progress}%
           </span>
         </div>
 
         {/* Agent name */}
-        <h4 className="font-semibold text-sm mb-1">
-          {agent.displayName}
-        </h4>
+        <h4 className="font-medium text-sm mb-1">{agent.displayName}</h4>
 
-        {/* Status message or description */}
+        {/* Status message */}
         <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
           {agent.message || agent.description}
         </p>
 
         {/* Progress bar */}
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className="h-1 bg-muted rounded-full overflow-hidden">
           <div 
             className={cn(
-              'h-full transition-all duration-500 rounded-full',
+              'h-full transition-all duration-300 rounded-full',
               agent.status === 'waiting' && 'bg-muted-foreground/30',
               agent.status === 'processing' && 'bg-primary',
-              agent.status === 'success' && 'bg-green-500',
+              agent.status === 'success' && 'bg-secondary',
               agent.status === 'error' && 'bg-destructive'
             )}
             style={{ width: `${agent.progress}%` }}
           />
         </div>
-
-        {/* Processing animation overlay */}
-        {isProcessing && (
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-progress pointer-events-none" />
-        )}
       </CardContent>
     </Card>
   );
@@ -137,9 +110,7 @@ export function AgentProgress({
     <div className={cn('space-y-6', className)}>
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-semibold mb-2">
-          Creating your Sidequest...
-        </h2>
+        <h2 className="text-2xl font-semibold mb-2">Creating your Sidequest</h2>
         <p className="text-muted-foreground">
           {currentMessage || 'Our AI agents are crafting your perfect experience'}
         </p>
@@ -148,34 +119,33 @@ export function AgentProgress({
       {/* Overall progress */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Overall Progress</span>
+          <span className="text-muted-foreground">Overall</span>
           <span className="font-medium">{overallProgress}%</span>
         </div>
-        <Progress value={overallProgress} className="h-2" />
+        <Progress value={overallProgress} className="h-1.5" />
       </div>
 
       {/* Agent grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {agentStates.map((agent) => (
           <AgentCard key={agent.name} agent={agent} />
         ))}
       </div>
 
-      {/* Fun facts during loading */}
+      {/* Fun facts */}
       <LoadingFacts />
     </div>
   );
 }
 
-// Fun facts carousel during loading
 function LoadingFacts() {
   const facts = [
-    "Did you know? Bangalore has over 10,000 restaurants serving cuisines from around the world.",
-    "Fun fact: Pottery workshops have seen a 300% increase in solo attendees since 2023.",
+    "Bangalore has over 10,000 restaurants serving cuisines from around the world.",
+    "Pottery workshops have seen a 300% increase in solo attendees since 2023.",
     "The #BangaloreRunClub community has over 50,000 active members.",
     "India's coffee culture started in Karnataka in the 17th century.",
     "Bangalore hosts more than 200 cultural events every month.",
-    "Cubbon Park spans 300 acres right in the heart of the city.",
+    "Cubbon Park spans 300 acres in the heart of the city.",
   ];
 
   const [currentFact, setCurrentFact] = useState(0);
@@ -188,7 +158,7 @@ function LoadingFacts() {
   }, [facts.length]);
 
   return (
-    <div className="mt-8 p-4 bg-muted/50 rounded-lg">
+    <div className="p-4 bg-muted/30 rounded-lg">
       <p className="text-sm text-center text-muted-foreground animate-fade-in" key={currentFact}>
         {facts[currentFact]}
       </p>
@@ -196,7 +166,7 @@ function LoadingFacts() {
   );
 }
 
-// Hook to simulate agent progress for demo
+// Hook to simulate agent progress
 export function useAgentProgress(isGenerating: boolean) {
   const [agentStates, setAgentStates] = useState<AgentState[]>(
     AGENTS.map((agent) => ({
@@ -212,7 +182,6 @@ export function useAgentProgress(isGenerating: boolean) {
 
   useEffect(() => {
     if (!isGenerating) {
-      // Reset states
       setAgentStates(
         AGENTS.map((agent) => ({
           name: agent.name,
@@ -227,7 +196,6 @@ export function useAgentProgress(isGenerating: boolean) {
       return;
     }
 
-    // Simulate agent progression
     const timeline = [
       { agent: 'discovery', start: 0, duration: 3000, message: 'Discovering experiences from local sources...' },
       { agent: 'cultural_context', start: 2500, duration: 3500, message: 'Adding cultural context and timing...' },
@@ -244,7 +212,6 @@ export function useAgentProgress(isGenerating: boolean) {
       const progress = Math.min((elapsed / totalDuration) * 100, 100);
       setOverallProgress(Math.round(progress));
 
-      // Update individual agent states
       setAgentStates((prev) =>
         prev.map((agent) => {
           const timelineEntry = timeline.find((t) => t.agent === agent.name);
@@ -268,7 +235,6 @@ export function useAgentProgress(isGenerating: boolean) {
         })
       );
 
-      // Update current message
       const activeAgent = timeline.find(
         (t) => elapsed >= t.start && elapsed < t.start + t.duration
       );

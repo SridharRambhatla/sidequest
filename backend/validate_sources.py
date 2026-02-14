@@ -1,14 +1,19 @@
 import json
 import os
+import glob
 
 def validate_sources():
     """Generate a validation report for fetched source data"""
     
-    summary_file = "sources/summary_20260214_142930.json"
+    # Find the latest summary file dynamically
+    summary_files = sorted(glob.glob("sources/summary_*.json"), reverse=True)
     
-    if not os.path.exists(summary_file):
-        print("No summary file found!")
+    if not summary_files:
+        print("No summary file found in sources/ directory!")
         return
+    
+    summary_file = summary_files[0]  # Most recent file
+    print(f"Using summary file: {summary_file}")
     
     with open(summary_file, 'r', encoding='utf-8') as f:
         data = json.load(f)

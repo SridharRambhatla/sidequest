@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from config import settings, AGENT_MODEL_CONFIG
 from state.schemas import AgentState
+from utils.helpers import strip_markdown_json
 
 
 PLOT_BUILDER_SYSTEM_PROMPT = """You are the Plot-Builder Agent for Sidequest, the core creative engine.
@@ -112,13 +113,7 @@ Weave these experiences into a journey with setup, friction, and payoff."""
 
         response = await model.ainvoke(messages)
 
-        response_text = response.content.strip()
-        if response_text.startswith("```"):
-            response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
-            response_text = response_text.strip()
-
+        response_text = strip_markdown_json(response.content)
         result = json.loads(response_text)
         state["narrative_itinerary"] = result.get("narrative_itinerary", "")
         state["collision_suggestion"] = result.get("collision_suggestion", {})

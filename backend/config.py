@@ -23,10 +23,11 @@ class Settings(BaseSettings):
     backend_host: str = os.getenv("BACKEND_HOST", "0.0.0.0")
 
     # Model Configuration
-    # Flash models — fast, used for routing, budget, community, discovery
+    # Flash models — fast, used for all agents
     flash_model: str = "gemini-2.0-flash"
-    # Pro models — deep reasoning, used for cultural context, plot building
-    pro_model: str = "gemini-2.0-pro"
+    # Pro models — using flash as fallback since pro may not be available
+    # To use pro models, set VERTEX_PRO_MODEL env var
+    pro_model: str = os.getenv("VERTEX_PRO_MODEL", "gemini-2.0-flash")
 
     # Agent Settings
     max_retries: int = 3
@@ -61,7 +62,7 @@ AGENT_MODEL_CONFIG = {
     "cultural_context": {
         "model_name": settings.pro_model,
         "temperature": 0.4,
-        "max_output_tokens": 4096,
+        "max_output_tokens": 2048,  # Reduced from 4096 - context is concise
     },
     "plot_builder": {
         "model_name": settings.pro_model,

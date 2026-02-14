@@ -8,11 +8,6 @@ google-cloud-aiplatform>=1.76.0
 langchain-google-vertexai>=2.0.12
 
 # Agent Orchestration
-langgraph>=0.2.0
-langchain-core>=0.3.0
-langchain-google-vertexai==2.0.12
-
-# Agent Orchestration
 langgraph>=0.2.60
 langchain-core>=0.3.28
 

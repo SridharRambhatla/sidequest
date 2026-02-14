@@ -99,13 +99,12 @@ def _state_to_response(state: AgentState) -> ItineraryResponse:
 
 async def run_workflow(request: ItineraryRequest) -> ItineraryResponse:
     """
-    Execute the full agent workflow.
+    Execute the full agent workflow (OPTIMIZED for latency).
 
     Pipeline:
     1. Discovery Agent — find experiences (sequential, needed by all others)
-    2. Cultural Context + Community — enrich in parallel
+    2. Cultural Context + Community + Budget — all in parallel (Budget only needs discovery)
     3. Plot-Builder — craft narrative (needs context + community output)
-    4. Budget Optimizer — final cost check (can run after discovery)
 
     All agents use Vertex AI Gemini models via langchain-google-vertexai.
     """
@@ -121,7 +120,10 @@ async def run_workflow(request: ItineraryRequest) -> ItineraryResponse:
     })
 
     # ── Step 1: Discovery ──────────────────────────────────
+    discovery_start = datetime.now()
     discovery_result = run_discovery(state)
+    discovery_latency = (datetime.now() - discovery_start).total_seconds() * 1000
+    
     # Merge discovery results into state
     state["discovered_experiences"] = discovery_result.get("discovered_experiences", [])
     if "error" in discovery_result:
@@ -135,38 +137,56 @@ async def run_workflow(request: ItineraryRequest) -> ItineraryResponse:
         "agent": "discovery",
         "status": "success" if discovery_result.get("discovered_experiences") else "error",
         "experiences_found": len(discovery_result.get("discovered_experiences", [])),
+        "latency_ms": discovery_latency,
         "timestamp": datetime.now().isoformat(),
     })
 
-    # ── Step 2: Cultural Context + Community (parallel) ────
-    # These two agents are independent — run them concurrently
+    # ── Step 2: Cultural Context + Community + Budget (ALL PARALLEL) ──
+    # Budget only needs discovered_experiences, so it can run alongside enrichment
+    # This saves ~2-3 seconds by not waiting for plot builder to finish first
     results = await asyncio.gather(
-        run_cultural_context(state.copy() if isinstance(state, dict) else dict(state)),
-        run_community(state.copy() if isinstance(state, dict) else dict(state))
+        run_cultural_context(dict(state)),
+        run_community(dict(state)),
+        run_budget_optimizer(dict(state)),
+        return_exceptions=True  # Don't fail fast - collect all results
     )
 
     # Merge parallel results back into state
-    cultural_state, community_state = results
+    cultural_state, community_state, budget_state = results
+    
+    # Handle potential exceptions
+    if isinstance(cultural_state, Exception):
+        state["errors"].append({"agent": "cultural_context", "error": str(cultural_state)})
+        cultural_state = {"cultural_context": {}, "agent_trace": [], "errors": []}
+    if isinstance(community_state, Exception):
+        state["errors"].append({"agent": "community", "error": str(community_state)})
+        community_state = {"social_scaffolding": {}, "agent_trace": [], "errors": []}
+    if isinstance(budget_state, Exception):
+        state["errors"].append({"agent": "budget", "error": str(budget_state)})
+        budget_state = {"budget_breakdown": {}, "agent_trace": [], "errors": []}
+    
     state["cultural_context"] = cultural_state.get("cultural_context", {})
     state["social_scaffolding"] = community_state.get("social_scaffolding", {})
-    # Merge traces
-    state["agent_trace"].extend(cultural_state.get("agent_trace", [])[len(state["agent_trace"]):])
-    state["agent_trace"].extend(community_state.get("agent_trace", [])[len(state["agent_trace"]):])
-    state["errors"].extend(cultural_state.get("errors", []))
-    state["errors"].extend(community_state.get("errors", []))
+    state["budget_breakdown"] = budget_state.get("budget_breakdown", {})
+    
+    # Merge traces from parallel agents
+    for parallel_state in [cultural_state, community_state, budget_state]:
+        for trace in parallel_state.get("agent_trace", []):
+            if trace not in state["agent_trace"]:
+                state["agent_trace"].append(trace)
+        state["errors"].extend(parallel_state.get("errors", []))
 
     # ── Step 3: Plot-Builder ───────────────────────────────
+    # Runs after cultural context + community since it needs their output
     state = await run_plot_builder(state)
-
-    # ── Step 4: Budget Optimizer ───────────────────────────
-    state = await run_budget_optimizer(state)
 
     # ── Finalize ───────────────────────────────────────────
     workflow_end = datetime.now()
+    total_latency = (workflow_end - workflow_start).total_seconds() * 1000
     state["agent_trace"].append({
         "agent": "coordinator",
         "status": "completed",
-        "total_latency_ms": (workflow_end - workflow_start).total_seconds() * 1000,
+        "total_latency_ms": total_latency,
         "timestamp": workflow_end.isoformat(),
         "agents_succeeded": sum(
             1 for t in state["agent_trace"]

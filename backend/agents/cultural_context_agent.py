@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from config import settings, AGENT_MODEL_CONFIG
 from state.schemas import AgentState
+from utils.helpers import strip_markdown_json
 
 
 CULTURAL_CONTEXT_SYSTEM_PROMPT = """You are the Cultural Context Agent for Sidequest, a plot-first experience platform for India.
@@ -85,13 +86,7 @@ Solo Visitor: {state.get('solo_preference', True)}
 
         response = await model.ainvoke(messages)
 
-        response_text = response.content.strip()
-        if response_text.startswith("```"):
-            response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
-            response_text = response_text.strip()
-
+        response_text = strip_markdown_json(response.content)
         result = json.loads(response_text)
         state["cultural_context"] = result.get("cultural_context", {})
 

@@ -71,7 +71,7 @@ export default function GeneratePage() {
       
       // Small delay to show completion state
       setTimeout(() => {
-        router.push(`/itinerary/${response.session_id}`);
+        router.push('/results');
       }, 1000);
 
     } catch (err) {

@@ -194,3 +194,90 @@ export const AGENTS = [
 ] as const;
 
 export type AgentName = typeof AGENTS[number]['name'];
+
+// ============================================
+// Discovery Page Types
+// ============================================
+
+export interface DiscoveryExperience {
+  id: string;
+  name: string;
+  category: string;
+  description_short: string;
+  image_url: string;
+  location: {
+    neighborhood: string;
+    coordinates: { lat: number; lng: number };
+  };
+  timing: {
+    type: 'flexible' | 'scheduled' | 'time_sensitive';
+    duration_hours: number;
+    advance_booking_required: boolean;
+    advance_days_minimum?: number;
+  };
+  budget: { min: number; max: number; currency: 'INR' };
+  solo_friendly: {
+    is_solo_sure: boolean;
+    confidence_score: number;
+  };
+  crowd_level: {
+    current: 'low' | 'moderate' | 'high';
+    updated_at: string;
+  };
+  weather_suitability: {
+    indoor: boolean;
+    outdoor: boolean;
+    current_match: 'perfect' | 'good' | 'fair' | 'poor';
+  };
+  availability: {
+    status: 'available' | 'limited' | 'sold_out';
+    urgency_level: 'low' | 'medium' | 'high';
+  };
+  rating?: number;
+  review_count?: number;
+  bookmarked: boolean;
+}
+
+export interface WeatherData {
+  temperature: number;
+  condition: 'sunny' | 'cloudy' | 'rainy' | 'partly_cloudy' | 'thunderstorm';
+  humidity: number;
+  description: string;
+  icon: string;
+  recommendation: string;
+}
+
+export interface DiscoveryFilters {
+  categories: string[];
+  budgetRange: [number, number];
+  soloFriendly: boolean;
+  crowdPreference: 'any' | 'low' | 'moderate' | 'high';
+  duration: 'any' | '1-2' | 'half-day' | 'full-day';
+  weatherAppropriate: boolean;
+}
+
+// ============================================
+// Gamification / Badges Types
+// ============================================
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  category: 'explorer' | 'behavior' | 'social';
+  icon: string;
+  requirement: number;
+  current_progress: number;
+  unlocked: boolean;
+  unlocked_at?: string;
+  tier: 'bronze' | 'silver' | 'gold';
+}
+
+export interface UserProfile {
+  badges: Badge[];
+  experiences_completed: number;
+  neighborhoods_explored: string[];
+  interest_pods_active: string[];
+  total_spend: number;
+  created_at: string;
+}
