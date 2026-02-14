@@ -121,14 +121,29 @@ async def run_workflow(request: ItineraryRequest) -> ItineraryResponse:
     })
 
     # ── Step 1: Discovery ──────────────────────────────────
-    state = await run_discovery(state)
+    discovery_result = run_discovery(state)
+    # Merge discovery results into state
+    state["discovered_experiences"] = discovery_result.get("discovered_experiences", [])
+    if "error" in discovery_result:
+        state["errors"].append({
+            "agent": "discovery",
+            "error": discovery_result["error"],
+            "timestamp": datetime.now().isoformat(),
+        })
+    # Add trace entry for discovery
+    state["agent_trace"].append({
+        "agent": "discovery",
+        "status": "success" if discovery_result.get("discovered_experiences") else "error",
+        "experiences_found": len(discovery_result.get("discovered_experiences", [])),
+        "timestamp": datetime.now().isoformat(),
+    })
 
     # ── Step 2: Cultural Context + Community (parallel) ────
     # These two agents are independent — run them concurrently
-    state_cultural = run_cultural_context(state.copy() if isinstance(state, dict) else dict(state))
-    state_community = run_community(state.copy() if isinstance(state, dict) else dict(state))
-
-    results = await asyncio.gather(state_cultural, state_community)
+    results = await asyncio.gather(
+        run_cultural_context(state.copy() if isinstance(state, dict) else dict(state)),
+        run_community(state.copy() if isinstance(state, dict) else dict(state))
+    )
 
     # Merge parallel results back into state
     cultural_state, community_state = results
