@@ -11,9 +11,12 @@ import {
   Bookmark,
   Star,
   ChevronRight,
+  Cloud,
+  Home,
 } from 'lucide-react';
 import { DiscoveryExperience } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import WeatherIndicator from '@/components/weather-indicator';
 
 interface DiscoveryCardProps {
   experience: DiscoveryExperience;
@@ -140,7 +143,7 @@ export function DiscoveryCard({
         </p>
 
         {/* Meta row */}
-        <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
             <MapPin className="h-3.5 w-3.5" />
             {experience.location.neighborhood}
@@ -149,6 +152,11 @@ export function DiscoveryCard({
             <Clock className="h-3.5 w-3.5" />
             {experience.timing.duration_hours}h
           </span>
+        </div>
+        
+        {/* Weather indicator */}
+        <div className="mb-3">
+          <WeatherIndicator experience={experience} compact />
         </div>
 
         {/* Footer */}

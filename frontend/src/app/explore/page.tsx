@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import {
   Sparkles,
   Search,
-  Sliders,
   X,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 import {
   DiscoveryCard,
@@ -16,19 +17,10 @@ import {
   WeatherWidget,
   CategoryTabs,
 } from '@/components/discovery';
-import { SAMPLE_EXPERIENCES } from '@/lib/sample-data';
-import { DiscoveryExperience, DiscoveryFilters } from '@/lib/types';
+import { useExperiences } from '@/hooks/useExperiences';
+import { DiscoveryExperience } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-
-const defaultFilters: DiscoveryFilters = {
-  categories: [],
-  budgetRange: [0, 5000],
-  soloFriendly: false,
-  crowdPreference: 'any',
-  duration: 'any',
-  weatherAppropriate: false,
-};
 
 // Quick filter options
 const quickFilters = [
@@ -37,15 +29,78 @@ const quickFilters = [
   { id: 'free', label: 'Free' },
 ] as const;
 
+// Time filter options
+const timeFilters = [
+  { id: 'morning', label: 'Morning', description: '6 AM - 12 PM' },
+  { id: 'afternoon', label: 'Afternoon', description: '12 PM - 5 PM' },
+  { id: 'evening', label: 'Evening', description: '5 PM - 9 PM' },
+  { id: 'night', label: 'Night', description: 'After 9 PM' },
+] as const;
+
 export default function ExplorePage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeQuickFilters, setActiveQuickFilters] = useState<string[]>([]);
+  const [selectedTimeFilter, setSelectedTimeFilter] = useState<string | null>(null);
+  
+  // Fetch experiences from API with fallback to sample data
+  const { 
+    experiences: allExperiences, 
+    isLoading, 
+    error, 
+    isFallback, 
+    refetch 
+  } = useExperiences({
+    fetchOnMount: true,
+    useFallback: true,
+  });
 
-  // Filter experiences
+  // Helper to determine time of day for an experience
+  const getTimeOfDay = (exp: DiscoveryExperience): string[] => {
+    const name = exp.name.toLowerCase();
+    const desc = exp.description_short.toLowerCase();
+    const combined = `${name} ${desc}`;
+    
+    const times: string[] = [];
+    
+    // Morning indicators
+    if (combined.includes('morning') || combined.includes('sunrise') || 
+        combined.includes('breakfast') || combined.includes('6am') || 
+        combined.includes('7am') || combined.includes('run club')) {
+      times.push('morning');
+    }
+    
+    // Afternoon indicators  
+    if (combined.includes('afternoon') || combined.includes('lunch') ||
+        exp.timing.type === 'flexible') {
+      times.push('afternoon');
+    }
+    
+    // Evening indicators
+    if (combined.includes('evening') || combined.includes('sunset') ||
+        combined.includes('dusk') || combined.includes('golden hour')) {
+      times.push('evening');
+    }
+    
+    // Night indicators
+    if (combined.includes('night') || combined.includes('concert') ||
+        combined.includes('nightlife') || combined.includes('dinner') ||
+        exp.category === 'Nightlife') {
+      times.push('night');
+    }
+    
+    // Default: flexible experiences work for afternoon
+    if (times.length === 0 && exp.timing.type === 'flexible') {
+      return ['morning', 'afternoon', 'evening'];
+    }
+    
+    return times.length > 0 ? times : ['afternoon']; // Default to afternoon
+  };
+
+  // Filter experiences (client-side filtering on fetched data)
   const filteredExperiences = useMemo(() => {
-    let results = [...SAMPLE_EXPERIENCES];
+    let results = [...allExperiences];
 
     // Category
     if (selectedCategory !== 'all') {
@@ -70,8 +125,16 @@ export default function ExplorePage() {
       if (f === 'free') results = results.filter((e) => e.budget.max === 0);
     });
 
+    // Time filter
+    if (selectedTimeFilter) {
+      results = results.filter((exp) => {
+        const expTimes = getTimeOfDay(exp);
+        return expTimes.includes(selectedTimeFilter);
+      });
+    }
+
     return results;
-  }, [selectedCategory, searchQuery, activeQuickFilters]);
+  }, [allExperiences, selectedCategory, searchQuery, activeQuickFilters, selectedTimeFilter]);
 
   const toggleQuickFilter = useCallback((id: string) => {
     setActiveQuickFilters((prev) =>
@@ -80,29 +143,20 @@ export default function ExplorePage() {
   }, []);
 
   const handleExperienceSelect = (experience: DiscoveryExperience) => {
+    // Store experience in sessionStorage for the details page
     sessionStorage.setItem('selected-experience', JSON.stringify(experience));
-    const formState = {
-      query: experience.name,
-      socialMediaUrls: [],
-      city: 'Bangalore',
-      budgetMin: experience.budget.min,
-      budgetMax: experience.budget.max,
-      numPeople: 1,
-      soloPreference: experience.solo_friendly.is_solo_sure,
-      interestPods: [],
-      crowdPreference: 'relatively_niche' as const,
-    };
-    sessionStorage.setItem('sidequest-form', JSON.stringify(formState));
-    router.push('/generate');
+    // Navigate directly to experience details page - no agent execution needed
+    router.push(`/experience/${experience.id}`);
   };
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('all');
     setActiveQuickFilters([]);
+    setSelectedTimeFilter(null);
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory !== 'all' || activeQuickFilters.length > 0;
+  const hasActiveFilters = searchQuery || selectedCategory !== 'all' || activeQuickFilters.length > 0 || selectedTimeFilter !== null;
 
   return (
     <main className="min-h-screen bg-background">
@@ -155,43 +209,113 @@ export default function ExplorePage() {
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {/* Filters row */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="space-y-4 mb-6">
+          {/* Quick filters */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {quickFilters.map((filter) => (
+                <button
+                  key={filter.id}
+                  onClick={() => toggleQuickFilter(filter.id)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                    activeQuickFilters.includes(filter.id)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-muted-foreground"
+              >
+                Clear all
+              </Button>
+            )}
+          </div>
+          
+          {/* Time filters */}
           <div className="flex items-center gap-2">
-            {quickFilters.map((filter) => (
+            <span className="text-sm text-muted-foreground mr-1">Time:</span>
+            {timeFilters.map((filter) => (
               <button
                 key={filter.id}
-                onClick={() => toggleQuickFilter(filter.id)}
+                onClick={() => setSelectedTimeFilter(
+                  selectedTimeFilter === filter.id ? null : filter.id
+                )}
                 className={cn(
                   'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                  activeQuickFilters.includes(filter.id)
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                  selectedTimeFilter === filter.id
+                    ? 'bg-secondary text-secondary-foreground'
+                    : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'
                 )}
+                title={filter.description}
               >
                 {filter.label}
               </button>
             ))}
           </div>
+        </div>
 
-          {hasActiveFilters && (
+        {/* Status indicators */}
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-muted-foreground">
+            {isLoading 
+              ? 'Discovering experiences...' 
+              : `${filteredExperiences.length} experience${filteredExperiences.length !== 1 ? 's' : ''}`
+            }
+          </p>
+          
+          <div className="flex items-center gap-2">
+            {isFallback && !isLoading && (
+              <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                <AlertCircle className="h-3 w-3" />
+                Using cached data
+              </span>
+            )}
             <Button
               variant="ghost"
               size="sm"
-              onClick={clearFilters}
+              onClick={() => refetch()}
+              disabled={isLoading}
               className="text-muted-foreground"
             >
-              Clear all
+              <RefreshCw className={cn("h-4 w-4 mr-1", isLoading && "animate-spin")} />
+              Refresh
             </Button>
-          )}
+          </div>
         </div>
 
-        {/* Results count */}
-        <p className="text-sm text-muted-foreground mb-4">
-          {filteredExperiences.length} experience{filteredExperiences.length !== 1 ? 's' : ''}
-        </p>
+        {/* Error display */}
+        {error && !isFallback && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p className="text-red-700 text-sm">{error.message}</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => refetch()}
+            >
+              Try again
+            </Button>
+          </div>
+        )}
 
         {/* Grid */}
-        {filteredExperiences.length > 0 ? (
+        {isLoading ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <DiscoveryCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filteredExperiences.length > 0 ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {filteredExperiences.map((experience) => (
               <DiscoveryCard

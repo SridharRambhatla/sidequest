@@ -168,7 +168,9 @@ export default function ItineraryGoogleMap({
                 className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
                 onClick={() => {
                   const exp = experiencesWithCoords[selectedMarker];
-                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${exp.coordinates?.lat},${exp.coordinates?.lng}`, '_blank');
+                  // Use place name search for accurate directions instead of coordinates
+                  const destination = encodeURIComponent(`${exp.name}, ${exp.location}, Bangalore`);
+                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank');
                 }}
               >
                 <Navigation className="h-3 w-3" />

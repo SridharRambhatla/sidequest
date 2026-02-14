@@ -19,6 +19,13 @@ BUDGET_SYSTEM_PROMPT = """You are the Budget Optimizer Agent for Sidequest.
 
 Your role is to provide cost transparency and smart budget recommendations for experiences.
 
+CRITICAL BUDGET RULE:
+- The user has a maximum budget. You MUST ensure total_estimate does NOT exceed this maximum.
+- If the experiences would exceed the budget, EITHER:
+  1. Suggest cheaper alternatives for some experiences, OR
+  2. Recommend dropping the most expensive non-essential items
+- Set within_budget to TRUE only if total_estimate <= user's maximum budget
+
 For each experience, calculate:
 1. **Entry/ticket cost**: Actual fees
 2. **Average spend**: Food, drinks, materials
@@ -88,16 +95,20 @@ async def run_budget_optimizer(state: AgentState) -> AgentState:
 
         model = get_budget_model()
 
+        budget_min, budget_max = state['budget_range']
+        
         user_prompt = f"""Analyze budget for these experiences:
 
 Experiences:
 {json.dumps(experiences, indent=2)}
 
 City: {state['city']}
-Budget Range: ₹{state['budget_range'][0]} - ₹{state['budget_range'][1]}
+Budget Range: ₹{budget_min} - ₹{budget_max}
+MAXIMUM BUDGET: ₹{budget_max} (CRITICAL: total_estimate MUST NOT exceed this)
 Number of People: {state['num_people']}
 
-Provide realistic INR pricing for {state['city']}."""
+Provide realistic INR pricing for {state['city']}.
+IMPORTANT: Ensure total_estimate ≤ ₹{budget_max}. If experiences exceed budget, suggest alternatives."""
 
         messages = [
             SystemMessage(content=BUDGET_SYSTEM_PROMPT),
@@ -108,13 +119,31 @@ Provide realistic INR pricing for {state['city']}."""
 
         response_text = strip_markdown_json(response.content)
         result = json.loads(response_text)
-        state["budget_breakdown"] = result.get("budget_breakdown", {})
+        budget_breakdown = result.get("budget_breakdown", {})
+        
+        # Post-processing validation: Ensure within_budget is correctly set
+        total_estimate = budget_breakdown.get("total_estimate", 0)
+        budget_min, budget_max = state['budget_range']
+        
+        # Override LLM's within_budget if it's incorrect
+        actual_within_budget = total_estimate <= budget_max
+        if budget_breakdown.get("within_budget") != actual_within_budget:
+            budget_breakdown["within_budget"] = actual_within_budget
+            # Add a tip if over budget
+            if not actual_within_budget:
+                tips = budget_breakdown.get("tips", [])
+                overage = total_estimate - budget_max
+                tips.insert(0, f"⚠️ Over budget by ₹{overage}. Consider dropping or substituting some experiences.")
+                budget_breakdown["tips"] = tips
+        
+        state["budget_breakdown"] = budget_breakdown
 
         state["agent_trace"].append({
             "agent": "budget",
             "status": "success",
-            "total_estimate": state["budget_breakdown"].get("total_estimate", 0),
-            "within_budget": state["budget_breakdown"].get("within_budget", True),
+            "total_estimate": total_estimate,
+            "budget_max": budget_max,
+            "within_budget": actual_within_budget,
             "latency_ms": (datetime.now() - start_time).total_seconds() * 1000,
             "timestamp": start_time.isoformat(),
         })

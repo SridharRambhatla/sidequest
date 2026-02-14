@@ -215,6 +215,8 @@ export interface DiscoveryExperience {
     advance_booking_required: boolean;
     advance_days_minimum?: number;
   };
+  operating_days?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'daily' | 'weekdays' | 'weekends')[];
+  operating_hours?: string;
   budget: { min: number; max: number; currency: 'INR' };
   solo_friendly: {
     is_solo_sure: boolean;

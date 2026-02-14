@@ -5,15 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
   Sparkles,
-  Link as LinkIcon,
-  MessageSquare,
   ChevronDown,
   ChevronUp,
   IndianRupee,
@@ -26,7 +23,7 @@ import {
 } from 'lucide-react';
 import { InterestPodSelector } from '@/components/filter-chips';
 import { InputFormState, DiscoveryExperience } from '@/lib/types';
-import { defaultFormState, isValidSocialMediaUrl, getPlatformFromUrl } from '@/lib/api';
+import { defaultFormState } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -47,8 +44,6 @@ export default function HomePage() {
   const router = useRouter();
   const [formState, setFormState] = useState<InputFormState>(defaultFormState);
   const [showPreferences, setShowPreferences] = useState(false);
-  const [urlInput, setUrlInput] = useState('');
-  const [urlError, setUrlError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Explore section state
@@ -117,35 +112,14 @@ export default function HomePage() {
 
   const hasActiveExploreFilters = searchQuery || selectedCategory !== 'all' || activeQuickFilters.length > 0;
 
-  const handleUrlAdd = () => {
-    if (!urlInput.trim()) return;
-    if (!isValidSocialMediaUrl(urlInput)) {
-      setUrlError('Enter a valid Instagram or YouTube URL');
-      return;
-    }
-    setFormState((prev) => ({
-      ...prev,
-      socialMediaUrls: [...prev.socialMediaUrls, urlInput.trim()],
-    }));
-    setUrlInput('');
-    setUrlError('');
-  };
-
-  const handleUrlRemove = (index: number) => {
-    setFormState((prev) => ({
-      ...prev,
-      socialMediaUrls: prev.socialMediaUrls.filter((_, i) => i !== index),
-    }));
-  };
-
   const handleSubmit = async () => {
-    if (!formState.query.trim() && formState.socialMediaUrls.length === 0) return;
+    if (!formState.query.trim()) return;
     setIsSubmitting(true);
     sessionStorage.setItem('sidequest-form', JSON.stringify(formState));
     router.push('/generate');
   };
 
-  const canSubmit = formState.query.trim().length > 0 || formState.socialMediaUrls.length > 0;
+  const canSubmit = formState.query.trim().length > 0;
 
   return (
     <main className="min-h-screen bg-background">
@@ -175,53 +149,12 @@ export default function HomePage() {
         {/* Input Card */}
         <Card className="shadow-sm">
           <CardContent className="p-5">
-            <Tabs defaultValue="text" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-5">
-                <TabsTrigger value="text" className="gap-1.5">
-                  <MessageSquare className="h-4 w-4" />
-                  Describe
-                </TabsTrigger>
-                <TabsTrigger value="url" className="gap-1.5">
-                  <LinkIcon className="h-4 w-4" />
-                  Paste URL
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="text">
-                <Textarea
-                  placeholder="e.g., Solo pottery workshop for beginners, or a heritage coffee walk..."
-                  className="min-h-[100px] resize-none text-base bg-muted/30 border-0"
-                  value={formState.query}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, query: e.target.value }))}
-                />
-              </TabsContent>
-
-              <TabsContent value="url" className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Paste Instagram or YouTube URL..."
-                    value={urlInput}
-                    onChange={(e) => { setUrlInput(e.target.value); setUrlError(''); }}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleUrlAdd())}
-                    className={cn('bg-muted/30 border-0', urlError && 'ring-1 ring-destructive')}
-                  />
-                  <Button onClick={handleUrlAdd} variant="secondary">Add</Button>
-                </div>
-                {urlError && <p className="text-xs text-destructive">{urlError}</p>}
-                
-                {formState.socialMediaUrls.length > 0 && (
-                  <div className="space-y-2">
-                    {formState.socialMediaUrls.map((url, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm">
-                        <span className="text-xs text-muted-foreground">{getPlatformFromUrl(url)}</span>
-                        <span className="truncate flex-1">{url}</span>
-                        <button onClick={() => handleUrlRemove(index)} className="text-muted-foreground hover:text-foreground">×</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+            <Textarea
+              placeholder="e.g., Solo pottery workshop for beginners, or a heritage coffee walk..."
+              className="min-h-[120px] resize-none text-base bg-muted/30 border-0"
+              value={formState.query}
+              onChange={(e) => setFormState((prev) => ({ ...prev, query: e.target.value }))}
+            />
 
             {/* City */}
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/50">

@@ -3,7 +3,28 @@
  * Connects to the FastAPI backend for itinerary generation
  */
 
-import { ItineraryRequest, ItineraryResponse, InputFormState } from './types';
+import { ItineraryRequest, ItineraryResponse, InputFormState, DiscoveryExperience } from './types';
+
+// ──────────────────────────────────────────────
+// Types for Discovery API
+// ──────────────────────────────────────────────
+
+export interface DiscoverRequest {
+  query?: string;
+  city?: string;
+  categories?: string[];
+  budget_min?: number;
+  budget_max?: number;
+  time_of_day?: 'morning' | 'afternoon' | 'evening' | 'night';
+  solo_friendly_only?: boolean;
+  limit?: number;
+}
+
+export interface DiscoverResponse {
+  experiences: DiscoveryExperience[];
+  total_count: number;
+  filters_applied: Record<string, unknown>;
+}
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -114,3 +135,39 @@ export const defaultFormState: InputFormState = {
   interestPods: [],
   crowdPreference: 'relatively_niche',
 };
+
+// ──────────────────────────────────────────────
+// Discovery API (for Explore page)
+// ──────────────────────────────────────────────
+
+/**
+ * Discover experiences for the explore page
+ * Calls the backend Discovery Agent to find experiences based on filters
+ */
+export async function discoverExperiences(
+  request: DiscoverRequest = {}
+): Promise<DiscoverResponse> {
+  const response = await fetch(`${API_BASE}/api/discover`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      query: request.query || null,
+      city: request.city || 'Bangalore',
+      categories: request.categories || [],
+      budget_min: request.budget_min ?? 0,
+      budget_max: request.budget_max ?? 10000,
+      time_of_day: request.time_of_day || null,
+      solo_friendly_only: request.solo_friendly_only ?? false,
+      limit: request.limit ?? 12,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Discovery failed: ${errorText}`);
+  }
+
+  return response.json();
+}

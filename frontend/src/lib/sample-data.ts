@@ -1,6 +1,12 @@
 /**
- * Sample Experiences Data for Discovery Page Visualization
- * Real Bangalore experiences with realistic data
+ * Sample Experiences Data - FALLBACK ONLY
+ * 
+ * This data is used as a fallback when the Discovery API is unavailable.
+ * The primary source of experiences is the /api/discover endpoint which
+ * dynamically fetches data using the Discovery Agent (Gemini).
+ * 
+ * @see /backend/agents/discovery_agent.py - Discovery Agent implementation
+ * @see /frontend/src/hooks/useExperiences.ts - Hook that handles API + fallback
  */
 
 import { DiscoveryExperience } from './types';
@@ -21,6 +27,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       duration_hours: 1,
       advance_booking_required: false,
     },
+    operating_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    operating_hours: '7:30 AM - 12:30 PM, 4:00 PM - 9:00 PM',
     budget: { min: 100, max: 200, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -59,6 +67,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       advance_booking_required: true,
       advance_days_minimum: 2,
     },
+    operating_days: ['saturday', 'sunday'],
+    operating_hours: '10:00 AM - 1:00 PM, 3:00 PM - 6:00 PM',
     budget: { min: 1200, max: 1500, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -96,6 +106,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       duration_hours: 1.5,
       advance_booking_required: false,
     },
+    operating_days: ['saturday'],
+    operating_hours: '6:00 AM - 8:00 AM',
     budget: { min: 0, max: 100, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -134,6 +146,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       advance_booking_required: true,
       advance_days_minimum: 1,
     },
+    operating_days: ['saturday', 'sunday'],
+    operating_hours: '7:00 AM - 10:00 AM',
     budget: { min: 500, max: 800, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -171,6 +185,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       duration_hours: 1,
       advance_booking_required: false,
     },
+    operating_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    operating_hours: '9:00 AM - 9:00 PM',
     budget: { min: 50, max: 150, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -208,6 +224,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       duration_hours: 2,
       advance_booking_required: false,
     },
+    operating_days: ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    operating_hours: '11:00 AM - 9:00 PM',
     budget: { min: 200, max: 500, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -245,6 +263,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       duration_hours: 2,
       advance_booking_required: false,
     },
+    operating_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    operating_hours: '6:00 AM - 7:00 PM',
     budget: { min: 20, max: 50, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -283,6 +303,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       advance_booking_required: true,
       advance_days_minimum: 7,
     },
+    operating_days: ['friday', 'saturday'],
+    operating_hours: '7:00 PM - 11:00 PM',
     budget: { min: 500, max: 800, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -320,6 +342,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       duration_hours: 3,
       advance_booking_required: false,
     },
+    operating_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    operating_hours: '10:00 AM - 8:00 PM',
     budget: { min: 500, max: 3000, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -357,6 +381,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       duration_hours: 1.5,
       advance_booking_required: false,
     },
+    operating_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    operating_hours: '5:30 AM - 8:00 PM',
     budget: { min: 0, max: 20, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -394,6 +420,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       duration_hours: 2,
       advance_booking_required: false,
     },
+    operating_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    operating_hours: '10:00 AM - 5:30 PM',
     budget: { min: 230, max: 460, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,
@@ -432,6 +460,8 @@ export const SAMPLE_EXPERIENCES: DiscoveryExperience[] = [
       advance_booking_required: true,
       advance_days_minimum: 1,
     },
+    operating_days: ['saturday', 'sunday'],
+    operating_hours: '6:00 AM - 9:00 AM',
     budget: { min: 800, max: 1200, currency: 'INR' },
     solo_friendly: {
       is_solo_sure: true,

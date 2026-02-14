@@ -1,0 +1,62 @@
+{
+  "session_id": "119405d8-5868-4b08-9fd0-1423608c8f2a",
+  "timestamp": "2026-02-14T16:42:45.560702",
+  "experiences_count": 5,
+  "experiences": [
+    {
+      "name": "Clay Station Pottery Workshop",
+      "category": "craft",
+      "timing": "Friday afternoon for a relaxing session",
+      "budget": 1500,
+      "location": "Koramangala",
+      "solo_friendly": true,
+      "source": "local_knowledge",
+      "lore": "",
+      "description": "Unleash your inner artist at Clay Station. Get your hands dirty creating unique pottery pieces in a relaxed, social atmosphere. Perfect for solo travelers looking to connect with their creative side."
+    },
+    {
+      "name": "Beanly The Coffee Tasting Experience",
+      "category": "food",
+      "timing": "Friday morning to kickstart the day",
+      "budget": 800,
+      "location": "Indiranagar",
+      "solo_friendly": true,
+      "source": "local_knowledge",
+      "lore": "",
+      "description": "Delve into the world of specialty coffee at Beanly The Coffee. Taste different brewing methods and single-origin beans, engaging with the knowledgeable baristas. It's a great way to meet fellow coffee enthusiasts."
+    },
+    {
+      "name": "The Flying Squirrel Chocolate Workshop",
+      "category": "food",
+      "timing": "Friday afternoon to learn chocolate making",
+      "budget": 2000,
+      "location": "Koramangala",
+      "solo_friendly": true,
+      "source": "local_knowledge",
+      "lore": "",
+      "description": "Indulge in a hands-on chocolate-making workshop at The Flying Squirrel. Learn about the bean-to-bar process and create your own delicious treats. A sweet experience for solo adventurers."
+    },
+    {
+      "name": "Kannada Kali - A Language & Culture Immersion",
+      "category": "heritage",
+      "timing": "Friday morning for a cultural dive",
+      "budget": 1200,
+      "location": "Basavanagudi",
+      "solo_friendly": true,
+      "source": "local_knowledge",
+      "lore": "",
+      "description": "Immerse yourself in Kannada culture with a language and heritage walk. Learn basic phrases and explore the historical Basavanagudi area. A unique way to connect with the local community."
+    },
+    {
+      "name": "Moksha Art Gallery Visit & Curator Chat",
+      "category": "art",
+      "timing": "Friday afternoon for an artistic exploration",
+      "budget": 500,
+      "location": "Jayanagar",
+      "solo_friendly": true,
+      "source": "local_knowledge",
+      "lore": "",
+      "description": "Explore contemporary Indian art at Moksha Art Gallery. Engage in a conversation with the curator to learn about the artists and their inspirations. A stimulating experience for art lovers."
+    }
+  ]
+}
