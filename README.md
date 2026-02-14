@@ -56,6 +56,15 @@ npm run dev
 
 Opens at `http://localhost:3000`.
 
+**Frontend Features:**
+- Custom calming design system (soft blues, muted greens, warm terracotta)
+- Real-time agent visualization (shows 5 agents collaborating)
+- Narrative timeline with cultural context
+- Interactive map with route visualization
+- Budget breakdown with donut chart
+- Solo-friendly indicators
+- Mobile responsive (375px → 1440px)
+
 ### API Usage
 
 ```bash
@@ -70,6 +79,13 @@ curl -X POST http://localhost:8000/api/generate-itinerary \
     "interest_pods": ["craft_explorer", "food_nerd"]
   }'
 ```
+
+## 🎬 Demo Flow (3-minute pitch)
+
+1. **0:00-0:30** — Show homepage, paste Instagram Reel URL → instant recognition
+2. **0:30-1:30** — Agent visualization (judges see 5 agents working in real-time)
+3. **1:30-2:30** — Reveal premium narrative itinerary with interactive map
+4. **2:30-3:00** — Highlight solo-sure tags, cultural context, mobile responsive view
 
 ## 📁 Project Structure
 
