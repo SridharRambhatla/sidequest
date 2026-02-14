@@ -8,6 +8,7 @@ import {
   GripVertical,
   MapPin,
   ChevronRight,
+  X,
 } from 'lucide-react';
 import { ExperienceItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,7 @@ interface DraggableTimelineCardProps {
   isActive?: boolean;
   onExpand?: () => void;
   onTimeEdit?: () => void;
+  onDelete?: () => void;
 }
 
 const categoryEmojis: Record<string, string> = {
@@ -43,6 +45,7 @@ export function DraggableTimelineCard({
   isActive,
   onExpand,
   onTimeEdit,
+  onDelete,
 }: DraggableTimelineCardProps) {
   const {
     attributes,
@@ -70,11 +73,24 @@ export function DraggableTimelineCard({
       )}
     >
       <Card className={cn(
-        'overflow-hidden border-border/50',
+        'overflow-hidden border-border/50 relative',
         'transition-shadow duration-200',
         isDragging && 'shadow-lg',
         isActive && 'ring-2 ring-primary/20'
       )}>
+        {/* Delete Button - Top Right */}
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="absolute top-1 right-1 z-10 p-1 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground text-muted-foreground opacity-0 group-hover:opacity-100 transition-all duration-200"
+            title="Remove from itinerary"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
         <div className="flex items-stretch">
           {/* Drag Handle */}
           <div

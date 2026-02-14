@@ -106,32 +106,72 @@ export function InteractiveTimeline({
     setActiveId(null);
 
     if (over && active.id !== over.id) {
-      setTimelineData((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
+      // Calculate new order outside of setState to avoid calling parent setState during render
+      const oldIndex = timelineData.findIndex((item) => item.id === active.id);
+      const newIndex = timelineData.findIndex((item) => item.id === over.id);
+      
+      const newItems = arrayMove(timelineData, oldIndex, newIndex);
+      
+      // Recalculate times
+      let currentMinutes = 9 * 60;
+      const updatedItems = newItems.map((item) => {
+        const hours = Math.floor(currentMinutes / 60);
+        const mins = currentMinutes % 60;
+        const timeSlot = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
         
-        const newItems = arrayMove(items, oldIndex, newIndex);
+        const durationMinutes = parseInt(item.durationStr) * (item.durationStr.includes('h') ? 60 : 1);
+        currentMinutes += durationMinutes + (item.travelFromPrevious?.duration || 15) + 15;
         
-        // Recalculate times
-        let currentMinutes = 9 * 60;
-        const updatedItems = newItems.map((item) => {
-          const hours = Math.floor(currentMinutes / 60);
-          const mins = currentMinutes % 60;
-          const timeSlot = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-          
-          const durationMinutes = parseInt(item.durationStr) * (item.durationStr.includes('h') ? 60 : 1);
-          currentMinutes += durationMinutes + (item.travelFromPrevious?.duration || 15) + 15;
-          
-          return { ...item, timeSlot };
-        });
+        return { ...item, timeSlot };
+      });
 
+      // Update local state
+      setTimelineData(updatedItems);
+      
+      // Notify parent after state update (use setTimeout to defer to next tick)
+      setTimeout(() => {
         toast.success('Timeline updated');
         onExperiencesReorder?.(updatedItems.map(({ id, timeSlot, durationStr, travelFromPrevious, ...rest }) => rest));
-        
-        return updatedItems;
-      });
+      }, 0);
     }
-  }, [onExperiencesReorder]);
+  }, [timelineData, onExperiencesReorder]);
+
+  const handleDelete = useCallback((itemId: string) => {
+    // Filter out the deleted item
+    const newItems = timelineData.filter((item) => item.id !== itemId);
+    
+    if (newItems.length === 0) {
+      toast.error('Cannot remove the last experience');
+      return;
+    }
+    
+    // Recalculate times for remaining items
+    let currentMinutes = 9 * 60;
+    const updatedItems = newItems.map((item, index) => {
+      const hours = Math.floor(currentMinutes / 60);
+      const mins = currentMinutes % 60;
+      const timeSlot = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+      
+      const durationMinutes = parseInt(item.durationStr) * (item.durationStr.includes('h') ? 60 : 1);
+      currentMinutes += durationMinutes + (item.travelFromPrevious?.duration || 15) + 15;
+      
+      // Remove travel indicator from first item
+      return { 
+        ...item, 
+        timeSlot,
+        travelFromPrevious: index === 0 ? undefined : item.travelFromPrevious,
+      };
+    });
+
+    // Update local state
+    setTimelineData(updatedItems);
+    
+    // Notify parent after state update
+    setTimeout(() => {
+      toast.success('Experience removed');
+      onExperiencesReorder?.(updatedItems.map(({ id, timeSlot, durationStr, travelFromPrevious, ...rest }) => rest));
+    }, 0);
+  }, [timelineData, onExperiencesReorder]);
 
   const activeItem = useMemo(
     () => timelineData.find((item) => item.id === activeId),
@@ -168,6 +208,7 @@ export function InteractiveTimeline({
                 isActive={activeId === item.id}
                 onExpand={() => onExperienceClick?.(index)}
                 onTimeEdit={() => toast.info('Time picker coming soon')}
+                onDelete={() => handleDelete(item.id)}
               />
             </div>
           ))}
