@@ -1,0 +1,23 @@
+# Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+python-multipart==0.0.9
+
+# Google Cloud / Vertex AI
+google-cloud-aiplatform==1.74.0
+langchain-google-vertexai==2.0.12
+
+# Agent Orchestration
+langgraph==0.2.60
+langchain-core==0.3.28
+
+# Data & Validation
+pydantic==2.10.0
+pydantic-settings==2.6.0
+
+# Utilities
+python-dotenv==1.0.1
+httpx==0.27.0
+
+# Async support
+aiohttp==3.11.0
