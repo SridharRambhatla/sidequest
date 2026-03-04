@@ -2,21 +2,14 @@
 Sidequest — Community Agent
 
 Solo-sure filtering, social scaffolding cues, and ambient belonging indicators.
-Uses Gemini Flash via Vertex AI for pattern matching.
+Uses Perplexity sonar (fast model) for pattern matching.
 """
 
 import json
 from datetime import datetime
-from langchain_google_vertexai import ChatVertexAI
-from langchain_core.messages import HumanMessage, SystemMessage
 
-from config import settings, AGENT_MODEL_CONFIG
 from state.schemas import AgentState
-from utils.helpers import strip_markdown_json
-from logging_system import AgentLogger, get_log_writer, get_log_config
-
-# Initialize Agent Logger with global log writer
-_agent_logger = AgentLogger("community_agent", log_writer=get_log_writer(), config=get_log_config())
+from utils.perplexity import acall_perplexity, FAST_MODEL
 
 
 COMMUNITY_SYSTEM_PROMPT = """You are the Community Agent for Sidequest.
@@ -50,19 +43,6 @@ Return JSON with key "social_scaffolding" where each key is the experience name:
 Respond ONLY with valid JSON, no markdown formatting."""
 
 
-def get_community_model() -> ChatVertexAI:
-    """Create a Vertex AI model instance for the Community Agent."""
-    config = AGENT_MODEL_CONFIG["community"]
-    return ChatVertexAI(
-        model_name=config["model_name"],
-        temperature=config["temperature"],
-        max_output_tokens=config["max_output_tokens"],
-        project=settings.google_cloud_project,
-        location=settings.google_cloud_location,
-    )
-
-
-@_agent_logger.log_execution
 async def run_community(state: AgentState) -> AgentState:
     """
     Execute the Community Agent.
@@ -84,8 +64,6 @@ async def run_community(state: AgentState) -> AgentState:
             })
             return state
 
-        model = get_community_model()
-
         user_prompt = f"""Analyze social dynamics for these experiences:
 
 Experiences:
@@ -96,14 +74,7 @@ Solo Visitor: {state.get('solo_preference', True)}
 
 Provide honest, encouraging solo-sure assessments."""
 
-        messages = [
-            SystemMessage(content=COMMUNITY_SYSTEM_PROMPT),
-            HumanMessage(content=user_prompt),
-        ]
-
-        response = await model.ainvoke(messages)
-
-        response_text = strip_markdown_json(response.content)
+        response_text = await acall_perplexity(COMMUNITY_SYSTEM_PROMPT, user_prompt, model=FAST_MODEL)
         result = json.loads(response_text)
         state["social_scaffolding"] = result.get("social_scaffolding", {})
 

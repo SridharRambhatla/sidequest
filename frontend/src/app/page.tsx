@@ -103,19 +103,7 @@ export default function HomePage() {
 
   const handleExperienceSelect = (experience: DiscoveryExperience) => {
     sessionStorage.setItem('selected-experience', JSON.stringify(experience));
-    const newFormState = {
-      query: experience.name,
-      socialMediaUrls: [],
-      city: 'Bangalore',
-      budgetMin: experience.budget.min,
-      budgetMax: experience.budget.max,
-      numPeople: 1,
-      soloPreference: experience.solo_friendly.is_solo_sure,
-      interestPods: [],
-      crowdPreference: 'relatively_niche' as const,
-    };
-    sessionStorage.setItem('sidequest-form', JSON.stringify(newFormState));
-    router.push('/generate');
+    router.push(`/experience/${experience.id}`);
   };
 
   const clearExploreFilters = () => {

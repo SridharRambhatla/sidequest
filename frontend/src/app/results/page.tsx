@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   Sparkles,
@@ -15,10 +16,12 @@ import {
   Clock,
   Navigation,
   Wallet,
+  ChevronDown,
+  CalendarDays,
 } from 'lucide-react';
 import { InteractiveTimeline } from '@/components/timeline';
 import { BudgetBreakdown } from '@/components/budget-breakdown';
-import { ItineraryResponse, ExperienceItem, InputFormState } from '@/lib/types';
+import { ItineraryResponse, ExperienceItem, InputFormState, CulturalContext, SocialScaffolding } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -32,6 +35,159 @@ const ItineraryMap = dynamic(() => import('@/components/google-map'), {
   ),
 });
 
+// ── Day grouping ──────────────────────────────────────────────────────
+interface DayGroup {
+  dayNumber: number;
+  experiences: ExperienceItem[];
+  totalBudget: number;
+  startTime: string;
+  endTime: string;
+}
+
+function groupByDay(experiences: ExperienceItem[]): DayGroup[] {
+  const map = new Map<number, ExperienceItem[]>();
+  for (const exp of experiences) {
+    const d = exp.day ?? 1;
+    if (!map.has(d)) map.set(d, []);
+    map.get(d)!.push(exp);
+  }
+  const sorted = Array.from(map.entries()).sort(([a], [b]) => a - b);
+  return sorted.map(([dayNumber, exps]) => {
+    const times = exps.map(e => e.start_time).filter(Boolean) as string[];
+    const startTime = times.length ? times[0] : '06:00';
+    // estimate end from last start + duration
+    const lastExp = exps[exps.length - 1];
+    const lastStart = lastExp.start_time ?? '18:00';
+    const [lh, lm] = lastStart.split(':').map(Number);
+    const endMins = (lh * 60 + lm) + Math.round((lastExp.duration_hours ?? 1.5) * 60);
+    const endH = Math.min(Math.floor(endMins / 60), 23);
+    const endM = endMins % 60;
+    const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+    return {
+      dayNumber,
+      experiences: exps,
+      totalBudget: exps.reduce((s, e) => s + (e.budget ?? 0), 0),
+      startTime,
+      endTime,
+    };
+  });
+}
+
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+function getDayLabel(dayNumber: number, totalDays: number): string {
+  if (totalDays === 1) return 'Today';
+  const today = new Date();
+  const d = new Date(today);
+  d.setDate(today.getDate() + dayNumber - 1);
+  return d.toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+const categoryEmoji: Record<string, string> = {
+  food: '🍽️', craft: '🎨', heritage: '🏛️', nature: '🌿',
+  art: '🎭', music: '🎵', fitness: '🌅', shopping: '🛍️', networking: '🤝',
+};
+
+// ── DaySection component ──────────────────────────────────────────────
+interface DaySectionProps {
+  group: DayGroup;
+  dayLabel: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  culturalContext?: CulturalContext;
+  socialScaffolding?: SocialScaffolding;
+  onExperienceClick: (globalIndex: number) => void;
+  globalIndexOffset: number;
+}
+
+function DaySection({
+  group,
+  dayLabel,
+  isOpen,
+  onToggle,
+  culturalContext,
+  socialScaffolding,
+  onExperienceClick,
+  globalIndexOffset,
+}: DaySectionProps) {
+  const categorySet = [...new Set(group.experiences.map(e => e.category))];
+  const themeLabel = categorySet.slice(0, 2).map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(' & ');
+
+  return (
+    <div className={cn(
+      'rounded-xl border bg-card shadow-sm transition-shadow duration-200',
+      isOpen ? 'shadow-md border-primary/20' : 'hover:shadow-md'
+    )}>
+      {/* Header — always visible, click to toggle */}
+      <button
+        className="w-full flex items-center justify-between gap-3 p-4 text-left"
+        onClick={onToggle}
+      >
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Badge className="bg-primary text-primary-foreground text-xs font-bold px-2.5 py-0.5 flex-shrink-0">
+            DAY {group.dayNumber}
+          </Badge>
+          <div className="min-w-0">
+            <p className="font-semibold text-sm truncate">{dayLabel}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {group.experiences.length} stops · {group.startTime} – {group.endTime}
+              {themeLabel ? ` · ${themeLabel}` : ''}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <span className="text-sm font-bold text-primary">
+            ₹{group.totalBudget.toLocaleString('en-IN')}
+          </span>
+          <div className={cn(
+            'w-6 h-6 rounded-full bg-muted flex items-center justify-center transition-transform duration-300',
+            isOpen ? 'rotate-180 bg-primary/10 text-primary' : 'text-muted-foreground'
+          )}>
+            <ChevronDown className="h-3.5 w-3.5" />
+          </div>
+        </div>
+      </button>
+
+      {/* Preview chips — visible when collapsed */}
+      {!isOpen && (
+        <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+          {group.experiences.slice(0, 4).map((exp, i) => (
+            <span
+              key={i}
+              className="text-xs bg-primary/10 text-primary font-medium px-2.5 py-1 rounded-full"
+            >
+              {categoryEmoji[exp.category] ?? '✨'} {exp.name.length > 22 ? exp.name.slice(0, 22) + '…' : exp.name}
+            </span>
+          ))}
+          {group.experiences.length > 4 && (
+            <span className="text-xs bg-muted text-muted-foreground px-2.5 py-1 rounded-full">
+              +{group.experiences.length - 4} more
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Collapsible timeline */}
+      <div className={cn(
+        'grid transition-all duration-300',
+        isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      )}>
+        <div className="overflow-hidden">
+          <div className="px-4 pb-4 pt-1 border-t border-border/50">
+            <InteractiveTimeline
+              experiences={group.experiences}
+              culturalContext={culturalContext}
+              socialScaffolding={socialScaffolding}
+              dayStartTime={group.startTime}
+              onExperienceClick={(localIdx) => onExperienceClick(globalIndexOffset + localIdx)}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────
 export default function ResultsPage() {
   const router = useRouter();
   const [itinerary, setItinerary] = useState<ItineraryResponse | null>(null);
@@ -40,16 +196,16 @@ export default function ResultsPage() {
   const [focusedExperience, setFocusedExperience] = useState<number | null>(null);
   const [showMobileMap, setShowMobileMap] = useState(false);
   const [showMobileBudget, setShowMobileBudget] = useState(false);
+  const [openDays, setOpenDays] = useState<Set<number>>(new Set([1])); // Day 1 open by default
 
   useEffect(() => {
     const stored = sessionStorage.getItem('sidequest-result');
     const storedForm = sessionStorage.getItem('sidequest-form');
     if (stored) {
       try {
-        setItinerary(JSON.parse(stored));
-        if (storedForm) {
-          setFormState(JSON.parse(storedForm));
-        }
+        const parsed: ItineraryResponse = JSON.parse(stored);
+        setItinerary(parsed);
+        if (storedForm) setFormState(JSON.parse(storedForm));
       } catch {
         router.push('/');
       }
@@ -59,27 +215,37 @@ export default function ResultsPage() {
     setIsLoading(false);
   }, [router]);
 
-  const handleExperiencesReorder = (experiences: ExperienceItem[]) => {
-    if (itinerary) {
-      const updated = { ...itinerary, experiences };
-      setItinerary(updated);
-      sessionStorage.setItem('sidequest-result', JSON.stringify(updated));
-    }
+  const dayGroups = useMemo(() => itinerary ? groupByDay(itinerary.experiences) : [], [itinerary]);
+
+  const handleExperiencesReorder = (dayNumber: number, newExps: ExperienceItem[]) => {
+    if (!itinerary) return;
+    const updated = {
+      ...itinerary,
+      experiences: itinerary.experiences
+        .filter(e => (e.day ?? 1) !== dayNumber)
+        .concat(newExps),
+    };
+    setItinerary(updated);
+    sessionStorage.setItem('sidequest-result', JSON.stringify(updated));
   };
 
   const handleShare = async () => {
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'My Sidequest',
-          text: 'Check out my itinerary!',
-          url: window.location.href,
-        });
-      } catch { /* cancelled */ }
+      try { await navigator.share({ title: 'My Sidequest', url: window.location.href }); }
+      catch { /* cancelled */ }
     } else {
       await navigator.clipboard.writeText(window.location.href);
       toast.success('Link copied');
     }
+  };
+
+  const toggleDay = (dayNumber: number) => {
+    setOpenDays(prev => {
+      const next = new Set(prev);
+      if (next.has(dayNumber)) next.delete(dayNumber);
+      else next.add(dayNumber);
+      return next;
+    });
   };
 
   if (isLoading) {
@@ -92,27 +258,27 @@ export default function ResultsPage() {
 
   if (!itinerary) return null;
 
-  const totalBudget = itinerary.budget_breakdown?.total_estimate || 
-    itinerary.experiences.reduce((sum, exp) => sum + exp.budget, 0);
+  const totalBudget = itinerary.budget_breakdown?.total_estimate ||
+    itinerary.experiences.reduce((s, e) => s + e.budget, 0);
+  const numDays = itinerary.num_days ?? dayGroups.length ?? 1;
+  const totalHours = numDays === 1 ? 15 : numDays * 15;
 
-  const totalHours = Math.ceil(itinerary.experiences.length * 1.5);
+  // Cumulative offset for global index mapping
+  let globalOffset = 0;
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* Header */}
+    <main className="min-h-screen bg-muted/30">
+      {/* ── Header ── */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border/50">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm">Back</span>
           </Link>
 
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <span className="font-medium">Your Itinerary</span>
+            <span className="font-semibold">Your Itinerary</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -130,7 +296,6 @@ export default function ResultsPage() {
                 />
               </SheetContent>
             </Sheet>
-
             <Button variant="ghost" size="icon" onClick={handleShare}>
               <Share2 className="h-4 w-4" />
             </Button>
@@ -138,39 +303,57 @@ export default function ResultsPage() {
         </div>
       </header>
 
-      {/* Content */}
-      <div className="flex max-w-6xl mx-auto">
-        {/* Timeline */}
-        <div className="flex-1 lg:w-[55%] min-h-[calc(100vh-3.5rem)] lg:border-r border-border/50">
-          <div className="p-4 lg:p-6">
-            {/* Summary */}
-            <div className="flex items-center gap-4 mb-6 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <Navigation className="h-4 w-4" />
-                {itinerary.experiences.length} stops
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4" />
-                ~{totalHours}h
-              </span>
-              <span className="flex items-center gap-1.5">
-                <IndianRupee className="h-4 w-4" />
-                {totalBudget.toLocaleString('en-IN')}
-              </span>
+      {/* ── Stats bar ── */}
+      <div className="bg-background border-b border-border/50">
+        <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-0 overflow-x-auto">
+          {[
+            { icon: <Navigation className="h-3.5 w-3.5" />, value: itinerary.experiences.length, label: 'stops' },
+            { icon: <Clock className="h-3.5 w-3.5" />, value: `~${totalHours}h`, label: '' },
+            { icon: <IndianRupee className="h-3.5 w-3.5" />, value: totalBudget.toLocaleString('en-IN'), label: '' },
+            { icon: <CalendarDays className="h-3.5 w-3.5" />, value: `${numDays} Day${numDays > 1 ? 's' : ''}`, label: '' },
+          ].map((stat, i) => (
+            <div key={i} className="flex items-center gap-1.5 text-sm text-muted-foreground px-4 border-r border-border/50 last:border-r-0 first:pl-0 whitespace-nowrap">
+              <span className="text-primary">{stat.icon}</span>
+              <strong className="text-foreground font-semibold">{stat.value}</strong>
+              {stat.label && <span>{stat.label}</span>}
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Timeline */}
-            <InteractiveTimeline
-              experiences={itinerary.experiences}
-              onExperiencesReorder={handleExperiencesReorder}
-              onExperienceClick={setFocusedExperience}
-            />
+      {/* ── Content ── */}
+      <div className="flex max-w-6xl mx-auto">
+
+        {/* Left: Day sections */}
+        <div className="flex-1 lg:w-[55%] min-h-[calc(100vh-7rem)] lg:border-r border-border/50">
+          <div className="p-4 lg:p-5 space-y-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">
+              Your Plan
+            </p>
+
+            {dayGroups.map((group) => {
+              const offset = globalOffset;
+              globalOffset += group.experiences.length;
+              return (
+                <DaySection
+                  key={group.dayNumber}
+                  group={group}
+                  dayLabel={getDayLabel(group.dayNumber, numDays)}
+                  isOpen={openDays.has(group.dayNumber)}
+                  onToggle={() => toggleDay(group.dayNumber)}
+                  culturalContext={itinerary.cultural_context}
+                  socialScaffolding={itinerary.social_scaffolding}
+                  onExperienceClick={setFocusedExperience}
+                  globalIndexOffset={offset}
+                />
+              );
+            })}
           </div>
         </div>
 
-        {/* Map - Desktop */}
-        <div className="hidden lg:flex lg:w-[45%] flex-col sticky top-14 h-[calc(100vh-3.5rem)]">
-          <div className="flex-1">
+        {/* Right: Map + Budget (desktop only, sticky) */}
+        <div className="hidden lg:flex lg:w-[45%] flex-col sticky top-[6.5rem] h-[calc(100vh-6.5rem)]">
+          <div className="flex-1 overflow-hidden">
             <ItineraryMap
               experiences={itinerary.experiences}
               focusedIndex={focusedExperience}
@@ -178,9 +361,8 @@ export default function ResultsPage() {
             />
           </div>
 
-          {/* Budget Breakdown - Desktop */}
           {itinerary.budget_breakdown && itinerary.budget_breakdown.breakdown?.length > 0 ? (
-            <div className="m-4 mt-0 max-h-[45%] overflow-y-auto">
+            <div className="m-4 mt-0 max-h-[42%] overflow-y-auto">
               <BudgetBreakdown
                 budget={itinerary.budget_breakdown}
                 targetBudget={{
@@ -197,9 +379,7 @@ export default function ResultsPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-muted-foreground">Total budget</span>
-                  <span className="text-lg font-semibold">
-                    ₹{totalBudget.toLocaleString('en-IN')}
-                  </span>
+                  <span className="text-lg font-semibold">₹{totalBudget.toLocaleString('en-IN')}</span>
                 </div>
                 <Button className="w-full" onClick={() => toast.info('Booking coming soon')}>
                   Book experiences
@@ -217,16 +397,12 @@ export default function ResultsPage() {
             <div className="pt-4">
               <BudgetBreakdown
                 budget={itinerary.budget_breakdown}
-                targetBudget={{
-                  min: formState?.budgetMin || 200,
-                  max: formState?.budgetMax || 5000,
-                }}
+                targetBudget={{ min: formState?.budgetMin || 200, max: formState?.budgetMax || 5000 }}
               />
             </div>
           ) : (
             <div className="text-center py-8">
               <IndianRupee className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">Budget details not available</p>
               <p className="text-2xl font-bold mt-2">₹{totalBudget.toLocaleString('en-IN')}</p>
             </div>
           )}
@@ -239,9 +415,9 @@ export default function ResultsPage() {
           <Button variant="outline" size="sm" onClick={() => setShowMobileMap(true)}>
             <MapIcon className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowMobileBudget(true)}
             className={cn(
               itinerary.budget_breakdown && !itinerary.budget_breakdown.within_budget && 'border-destructive text-destructive'

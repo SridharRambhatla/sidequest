@@ -3,21 +3,14 @@ Sidequest — Plot-Builder Agent (Innovation Core)
 
 Generates narrative itineraries with emotional arcs, lore layering, and intentional friction.
 This is the core differentiator — stories, not lists.
-Uses Gemini Pro via Vertex AI for creative storytelling.
+Uses Perplexity sonar-pro for creative storytelling.
 """
 
 import json
 from datetime import datetime
-from langchain_google_vertexai import ChatVertexAI
-from langchain_core.messages import HumanMessage, SystemMessage
 
-from config import settings, AGENT_MODEL_CONFIG
 from state.schemas import AgentState
-from utils.helpers import strip_markdown_json
-from logging_system import AgentLogger, get_log_writer, get_log_config
-
-# Initialize Agent Logger with global log writer
-_agent_logger = AgentLogger("plot_builder_agent", log_writer=get_log_writer(), config=get_log_config())
+from utils.perplexity import acall_perplexity, PRO_MODEL
 
 
 PLOT_BUILDER_SYSTEM_PROMPT = """You are the Plot-Builder Agent for Sidequest, the core creative engine.
@@ -65,19 +58,6 @@ Open with a hook. Close with a reflection on what this day means.
 Respond ONLY with valid JSON, no markdown formatting."""
 
 
-def get_plot_builder_model() -> ChatVertexAI:
-    """Create a Vertex AI model instance for the Plot-Builder Agent."""
-    config = AGENT_MODEL_CONFIG["plot_builder"]
-    return ChatVertexAI(
-        model_name=config["model_name"],
-        temperature=config["temperature"],
-        max_output_tokens=config["max_output_tokens"],
-        project=settings.google_cloud_project,
-        location=settings.google_cloud_location,
-    )
-
-
-@_agent_logger.log_execution
 async def run_plot_builder(state: AgentState) -> AgentState:
     """
     Execute the Plot-Builder Agent.
@@ -98,8 +78,6 @@ async def run_plot_builder(state: AgentState) -> AgentState:
                 "latency_ms": 0,
             })
             return state
-
-        model = get_plot_builder_model()
 
         # Calculate time constraints
         time_available = state.get('time_available_hours', 8.0)
@@ -145,14 +123,7 @@ Craft a narrative that fits within the {time_available}-hour window starting at 
 Select the best 2-4 experiences that can be realistically completed in this time.
 Weave them into a journey with setup, friction, and payoff."""
 
-        messages = [
-            SystemMessage(content=PLOT_BUILDER_SYSTEM_PROMPT),
-            HumanMessage(content=user_prompt),
-        ]
-
-        response = await model.ainvoke(messages)
-
-        response_text = strip_markdown_json(response.content)
+        response_text = await acall_perplexity(PLOT_BUILDER_SYSTEM_PROMPT, user_prompt, model=PRO_MODEL)
         result = json.loads(response_text)
         state["narrative_itinerary"] = result.get("narrative_itinerary", "")
         state["collision_suggestion"] = result.get("collision_suggestion", {})

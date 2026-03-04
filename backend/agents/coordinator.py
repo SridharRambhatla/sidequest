@@ -33,8 +33,8 @@ def _create_initial_state(request: ItineraryRequest) -> AgentState:
         crowd_preference=request.crowd_preference,
         start_date=request.start_date or "",
         end_date=request.end_date or "",
-        time_available_hours=request.time_available_hours or 8.0,  # Default to 8 hours
-        start_time=request.start_time or "10:00",  # Default to 10 AM
+        time_available_hours=request.time_available_hours or 15.0,  # Default 06:00–21:00
+        start_time=request.start_time or "06:00",  # Default to 6 AM
         # Agent outputs (initialized empty)
         discovered_experiences=[],
         cultural_context={},
@@ -58,6 +58,11 @@ def _state_to_response(state: AgentState) -> ItineraryResponse:
             "name": exp.get("name", ""),
             "category": exp.get("category", ""),
             "timing": exp.get("timing", ""),
+            "start_time": exp.get("start_time"),
+            "day": exp.get("day", 1),
+            "duration_hours": exp.get("duration_hours"),
+            "operating_hours": exp.get("operating_hours"),
+            "operating_days": exp.get("operating_days"),
             "budget": exp.get("budget", 0),
             "location": exp.get("location", ""),
             "solo_friendly": exp.get("solo_friendly", False),
@@ -87,6 +92,9 @@ def _state_to_response(state: AgentState) -> ItineraryResponse:
             "why": collision.get("why", ""),
         }
 
+    # Derive num_days from the experiences
+    num_days = max((exp.get("day", 1) for exp in state.get("discovered_experiences", [])), default=1)
+
     return ItineraryResponse(
         narrative_itinerary=state.get("narrative_itinerary", ""),
         experiences=experiences,
@@ -94,6 +102,7 @@ def _state_to_response(state: AgentState) -> ItineraryResponse:
         budget_breakdown=budget_obj,
         social_scaffolding=state.get("social_scaffolding", {}),
         collision_suggestion=collision_obj,
+        num_days=num_days,
         agent_trace=state.get("agent_trace", []),
         session_id=state.get("session_id", ""),
     )

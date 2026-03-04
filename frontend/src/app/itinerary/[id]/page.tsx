@@ -204,6 +204,7 @@ export default function ItineraryPage() {
                     culturalContext={itinerary.cultural_context?.[experience.name]}
                     socialScaffolding={itinerary.social_scaffolding?.[experience.name]}
                     onMapFocus={() => handleMapFocus(index)}
+                    isFocused={focusedExperience === index}
                     className={cn(
                       'transition-all duration-300',
                       focusedExperience === index && 'bg-primary/5 -mx-4 px-4 py-2 rounded-lg'

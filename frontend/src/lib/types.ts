@@ -33,6 +33,12 @@ export interface ExperienceItem {
   name: string;
   category: string;
   timing: string;
+  start_time?: string;        // HH:MM (24h) for timeline slot
+  day?: number;               // Day number (1-indexed) for multi-day itineraries
+  time_of_day?: string;
+  duration_hours?: number;
+  operating_hours?: string;
+  operating_days?: string[];
   budget: number;
   location: string;
   solo_friendly: boolean;
@@ -90,11 +96,15 @@ export interface SocialScaffolding {
 
 export interface CulturalContext {
   [experienceName: string]: {
-    timing: string;
-    dress: string;
-    transport: string;
-    social: string;
-    safety: string;
+    // Compact schema (current)
+    timing?: string;
+    tip?: string;
+    solo_note?: string;
+    // Legacy fields (kept for backwards compat)
+    dress?: string;
+    transport?: string;
+    social?: string;
+    safety?: string;
   };
 }
 
@@ -105,6 +115,7 @@ export interface ItineraryResponse {
   budget_breakdown: BudgetBreakdown | null;
   social_scaffolding: SocialScaffolding;
   collision_suggestion: CollisionSuggestion | null;
+  num_days: number;
   agent_trace: AgentTraceEntry[];
   session_id: string;
 }

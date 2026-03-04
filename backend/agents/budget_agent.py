@@ -2,21 +2,14 @@
 Sidequest — Budget Optimizer Agent
 
 Cost transparency, deals discovery, and booking timeline recommendations.
-Uses Gemini Flash via Vertex AI for fast numerical analysis.
+Uses Perplexity sonar (fast model) for numerical analysis.
 """
 
 import json
 from datetime import datetime
-from langchain_google_vertexai import ChatVertexAI
-from langchain_core.messages import HumanMessage, SystemMessage
 
-from config import settings, AGENT_MODEL_CONFIG
 from state.schemas import AgentState
-from utils.helpers import strip_markdown_json
-from logging_system import AgentLogger, get_log_writer, get_log_config
-
-# Initialize Agent Logger with global log writer
-_agent_logger = AgentLogger("budget_agent", log_writer=get_log_writer(), config=get_log_config())
+from utils.perplexity import acall_perplexity, FAST_MODEL
 
 
 BUDGET_SYSTEM_PROMPT = """You are the Budget Optimizer Agent for Sidequest.
@@ -60,19 +53,6 @@ All costs in INR (₹). Be realistic with Bangalore/Indian city pricing.
 Respond ONLY with valid JSON, no markdown formatting."""
 
 
-def get_budget_model() -> ChatVertexAI:
-    """Create a Vertex AI model instance for the Budget Agent."""
-    config = AGENT_MODEL_CONFIG["budget"]
-    return ChatVertexAI(
-        model_name=config["model_name"],
-        temperature=config["temperature"],
-        max_output_tokens=config["max_output_tokens"],
-        project=settings.google_cloud_project,
-        location=settings.google_cloud_location,
-    )
-
-
-@_agent_logger.log_execution
 async def run_budget_optimizer(state: AgentState) -> AgentState:
     """
     Execute the Budget Optimizer Agent.
@@ -98,10 +78,8 @@ async def run_budget_optimizer(state: AgentState) -> AgentState:
             })
             return state
 
-        model = get_budget_model()
-
         budget_min, budget_max = state['budget_range']
-        
+
         user_prompt = f"""Analyze budget for these experiences:
 
 Experiences:
@@ -115,14 +93,7 @@ Number of People: {state['num_people']}
 Provide realistic INR pricing for {state['city']}.
 IMPORTANT: Ensure total_estimate ≤ ₹{budget_max}. If experiences exceed budget, suggest alternatives."""
 
-        messages = [
-            SystemMessage(content=BUDGET_SYSTEM_PROMPT),
-            HumanMessage(content=user_prompt),
-        ]
-
-        response = await model.ainvoke(messages)
-
-        response_text = strip_markdown_json(response.content)
+        response_text = await acall_perplexity(BUDGET_SYSTEM_PROMPT, user_prompt, model=FAST_MODEL)
         result = json.loads(response_text)
         budget_breakdown = result.get("budget_breakdown", {})
         

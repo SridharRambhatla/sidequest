@@ -78,6 +78,11 @@ class ExperienceItem(BaseModel):
     name: str
     category: str
     timing: str
+    start_time: Optional[str] = None   # HH:MM (24h) for timeline display
+    day: int = 1                        # Day number (1-indexed) for multi-day itineraries
+    duration_hours: Optional[float] = None
+    operating_hours: Optional[str] = None
+    operating_days: Optional[list[str]] = None
     budget: int
     location: str
     solo_friendly: bool = False
@@ -255,6 +260,10 @@ class ItineraryResponse(BaseModel):
         description="Solo-sure and social scaffolding info"
     )
     collision_suggestion: Optional[CollisionSuggestion] = None
+    num_days: int = Field(
+        default=1,
+        description="Number of days in the itinerary"
+    )
     agent_trace: list[dict[str, Any]] = Field(
         default_factory=list,
         description="Agent execution trace for demo visualization"

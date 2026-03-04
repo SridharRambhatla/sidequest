@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     flash_model: str = "gemini-2.0-flash"
     # Pro models — using flash as fallback since pro may not be available
     # To use pro models, set VERTEX_PRO_MODEL env var
-    pro_model: str = os.getenv("VERTEX_PRO_MODEL", "gemini-2.0-flash")
+    pro_model: str = os.getenv("VERTEX_PRO_MODEL", "gemini-2.0-pro-exp-02-05")
 
     # Agent Settings
     max_retries: int = 3

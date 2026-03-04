@@ -22,7 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { DraggableTimelineCard } from './draggable-card';
 import { TravelIndicator } from './travel-indicator';
-import { ExperienceItem } from '@/lib/types';
+import { ExperienceItem, CulturalContext, SocialScaffolding } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 interface TimelineExperience extends ExperienceItem {
@@ -38,34 +38,54 @@ interface TimelineExperience extends ExperienceItem {
 
 interface InteractiveTimelineProps {
   experiences: ExperienceItem[];
+  culturalContext?: CulturalContext;
+  socialScaffolding?: SocialScaffolding;
+  dayStartTime?: string; // HH:MM default "06:00"
   onExperiencesReorder?: (experiences: ExperienceItem[]) => void;
   onExperienceClick?: (index: number) => void;
   className?: string;
 }
 
-function generateTimelineData(experiences: ExperienceItem[]): TimelineExperience[] {
-  let currentMinutes = 9 * 60; // Start 9 AM
+function parseMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function minutesToHHMM(mins: number): string {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
+
+function generateTimelineData(experiences: ExperienceItem[], dayStartTime = '06:00'): TimelineExperience[] {
+  let currentMinutes = parseMinutes(dayStartTime);
 
   return experiences.map((exp, index) => {
-    const hours = Math.floor(currentMinutes / 60);
-    const mins = currentMinutes % 60;
-    const timeSlot = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-    
-    const durationMinutes = exp.category === 'Heritage Walk' ? 180 
-      : exp.category === 'Craft Workshop' ? 150
-      : exp.category === 'Food & Drink' ? 60
+    // Use backend-provided start_time if available, otherwise cascade from previous
+    if (exp.start_time) {
+      const parsed = parseMinutes(exp.start_time);
+      if (parsed >= currentMinutes) currentMinutes = parsed;
+    }
+
+    const timeSlot = minutesToHHMM(currentMinutes);
+
+    const durationMinutes = exp.duration_hours
+      ? Math.round(exp.duration_hours * 60)
+      : exp.category === 'heritage' || exp.category === 'Heritage Walk' ? 180
+      : exp.category === 'craft' || exp.category === 'Craft Workshop' ? 150
+      : exp.category === 'food' || exp.category === 'Food & Drink' ? 60
       : 90;
-    
-    const durationStr = durationMinutes >= 60 
-      ? `${Math.floor(durationMinutes / 60)}h`
+
+    const durationStr = durationMinutes >= 60
+      ? `${Math.floor(durationMinutes / 60)}h${durationMinutes % 60 ? (durationMinutes % 60) + 'm' : ''}`
       : `${durationMinutes}m`;
 
     const travelMethods: ('walk' | 'drive' | 'transit')[] = ['walk', 'drive', 'transit'];
     const travelMethod = travelMethods[index % 3];
-    const distance = 1 + Math.random() * 4;
+    const distance = 1 + (index * 1.3) % 4;
     const travelDuration = Math.round(distance * (travelMethod === 'walk' ? 12 : 4));
 
-    currentMinutes += durationMinutes + travelDuration + 15;
+    currentMinutes += durationMinutes + travelDuration + 5;
 
     return {
       ...exp,
@@ -83,12 +103,15 @@ function generateTimelineData(experiences: ExperienceItem[]): TimelineExperience
 
 export function InteractiveTimeline({
   experiences,
+  culturalContext,
+  socialScaffolding,
+  dayStartTime = '06:00',
   onExperiencesReorder,
   onExperienceClick,
   className,
 }: InteractiveTimelineProps) {
-  const [timelineData, setTimelineData] = useState<TimelineExperience[]>(() => 
-    generateTimelineData(experiences)
+  const [timelineData, setTimelineData] = useState<TimelineExperience[]>(() =>
+    generateTimelineData(experiences, dayStartTime)
   );
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -206,7 +229,9 @@ export function InteractiveTimeline({
                 timeSlot={item.timeSlot}
                 duration={item.durationStr}
                 isActive={activeId === item.id}
-                onExpand={() => onExperienceClick?.(index)}
+                culturalContext={culturalContext?.[item.name]}
+                socialScaffolding={socialScaffolding?.[item.name]}
+                onMapFocus={() => onExperienceClick?.(index)}
                 onTimeEdit={() => toast.info('Time picker coming soon')}
                 onDelete={() => handleDelete(item.id)}
               />

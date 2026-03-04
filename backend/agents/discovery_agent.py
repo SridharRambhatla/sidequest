@@ -7,15 +7,13 @@ from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 from dateutil.relativedelta import relativedelta, MO, TU, WE, TH, FR, SA, SU
 from dotenv import load_dotenv
-import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
-from logging_system import AgentLogger, get_log_writer, get_log_config
 
 # Load environment variables
 load_dotenv()
 
 # Import geocoding utility
 from utils.geocoding import geocode_experiences
+from utils.perplexity import call_perplexity, PRO_MODEL
 
 
 # --- DATE PARSING UTILITY ---
@@ -229,9 +227,6 @@ def parse_time_from_query(query: str) -> Tuple[Optional[str], Optional[str]]:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Agent Logger with global log writer
-_agent_logger = AgentLogger("discovery_agent", log_writer=get_log_writer(), config=get_log_config())
-
 # --- 1. SYSTEM PROMPT ---
 DISCOVERY_SYSTEM_PROMPT = """You are the Discovery Agent for Sidequest, a plot-first experience discovery platform.
 
@@ -269,14 +264,23 @@ CRITICAL: If a duration constraint is mentioned, respect the user's available ti
 - For limited time, quality over quantity — fewer, deeper experiences are better
 - Consider travel time between experiences (15-30 mins in city traffic)
 
+MULTI-DAY RULES (CRITICAL):
+- If the user requests multiple days (e.g., "3-day trip", "weekend getaway"), distribute experiences across days.
+- Set "day" to 1, 2, 3... to indicate which day the experience belongs to.
+- Aim for 3-5 quality experiences per day, ordered by start_time within each day.
+- For single-day queries, all experiences get day: 1.
+- Default day window: 06:00 – 21:00. Fit experiences with realistic travel time between stops.
+
 For each experience, provide:
 - name: Experience name (be specific - include venue name if applicable)
+- day: Integer day number this experience belongs to (1-indexed). Default 1 for single-day itineraries.
+- start_time: Recommended start time in HH:MM (24h) format (e.g., "09:30"). Fit within the day window.
 - category: One of [food, craft, heritage, nature, art, music, fitness, shopping, networking]
-- timing: Best time to visit (e.g., "Saturday 7 AM for fresh flowers")
-- time_of_day: One of [morning, afternoon, evening, night, flexible] - when this experience is best enjoyed
+- timing: Human-readable best time (e.g., "Saturday 7 AM for fresh flowers")
+- time_of_day: One of [morning, afternoon, evening, night, flexible]
 - duration_hours: Estimated time to fully enjoy this experience (e.g., 1.5, 2, 3). Be realistic.
-- operating_days: Array of days when open, e.g., ["monday", "tuesday", "wednesday", "thursday", "friday"] or ["saturday", "sunday"] or ["daily"]
-- operating_hours: String describing hours, e.g., "10 AM - 6 PM" or "7 AM - 12 PM, 4 PM - 9 PM"
+- operating_days: Array of days when open, e.g., ["monday", ..., "friday"] or ["saturday", "sunday"] or ["daily"]
+- operating_hours: String describing hours, e.g., "10 AM - 6 PM"
 - budget: Estimated cost in INR (Integer only)
 - location: Neighborhood/area in the city
 - solo_friendly: Boolean (true/false)
@@ -286,29 +290,31 @@ For each experience, provide:
 Return your response as a JSON object with key "discovered_experiences" containing an array of experiences.
 Respond ONLY with valid JSON."""
 
-# --- 2. API CONFIGURATION ---
-# Assuming you have GOOGLE_API_KEY in your environment variables
-genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+# --- 2. MULTI-DAY PARSING ---
+def parse_num_days_from_query(query: str) -> int:
+    """Extract the number of days from a user query. Default is 1."""
+    q = query.lower()
+    # Numeric: "3 days", "3-day", "3day"
+    match = re.search(r'(\d+)\s*[-\s]?day', q)
+    if match:
+        return max(1, min(int(match.group(1)), 14))  # cap at 14 days
+    # Word numbers
+    word_map = {'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7}
+    for word, num in word_map.items():
+        if f'{word} day' in q or f'{word}-day' in q:
+            return num
+    # Special cases
+    if 'weekend' in q or 'two days' in q:
+        return 2
+    if 'week' in q and 'weekend' not in q:
+        return 7
+    return 1
 
-# Configuration for the model
-generation_config = {
-    "temperature": 0.4, # Keep it somewhat creative but grounded
-    "top_p": 0.95,
-    "top_k": 40,
-    "max_output_tokens": 8192,
-    "response_mime_type": "application/json", # FORCE JSON OUTPUT
-}
 
-# Safety settings (Permissive for travel content)
-safety_settings = {
-    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-}
+# --- 3. API CONFIGURATION ---
+PERPLEXITY_MODEL = PRO_MODEL
 
 # --- 3. AGENT FUNCTION ---
-@_agent_logger.log_execution
 def run_discovery_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Executes the Discovery Agent.
@@ -348,12 +354,6 @@ def run_discovery_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"Day of Week: {day_of_week}")
     logger.info("="*60)
 
-    # Initialize Model - Using Gemini 2.0 Flash for Speed/Cost efficiency
-    model = genai.GenerativeModel(
-        model_name="models/gemini-2.0-flash",
-        system_instruction=DISCOVERY_SYSTEM_PROMPT,
-    )
-
     # Construct the User Prompt
     # We inject the specific variables into the prompt context
     interest_context = ""
@@ -385,49 +385,58 @@ def run_discovery_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         # Add today's date for reference
         date_context += f"\n(Today is {datetime.now().strftime('%A, %B %d, %Y')})"
     
-    # Add duration constraint based on available time
+    # Parse number of days
+    num_days = parse_num_days_from_query(user_query)
+
+    # Add duration / day-window constraint
     duration_context = ""
-    if time_available_hours and time_available_hours < 8:
-        # For limited time windows, prioritize shorter experiences
-        max_single_exp_hours = min(time_available_hours / 2, 3)  # No single experience > half the total or 3 hours
+    if num_days > 1:
         duration_context = f"""
 
-DURATION CONSTRAINT: User has only {time_available_hours} hours available (starting at {start_time}).
-- Prioritize experiences that take {max_single_exp_hours:.1f} hours or less each
-- Total experiences should fit within {time_available_hours} hours including travel time (15-30 min between stops)
-- For limited time, recommend 2-4 quality experiences rather than 5-10 rushed ones
-- Include estimated duration for each experience in the response"""
-    
+MULTI-DAY ITINERARY: User wants a {num_days}-day plan.
+- Return {num_days * 4}-{num_days * 5} experiences total, distributed across {num_days} days.
+- Set "day" field: 1 through {num_days}. Each day runs 06:00 – 21:00.
+- Assign "start_time" (HH:MM) to each experience so the day flows logically with 15-30 min travel between stops."""
+    elif time_available_hours and time_available_hours < 15:
+        max_single_exp_hours = min(time_available_hours / 2, 3)
+        duration_context = f"""
+
+DURATION CONSTRAINT: User has {time_available_hours} hours available (starting {start_time}, ending ~21:00).
+- Prioritize experiences ≤{max_single_exp_hours:.1f}h each.
+- 2-4 quality experiences total with realistic travel time.
+- Set "start_time" (HH:MM) for each experience within the window."""
+    else:
+        duration_context = f"""
+
+DAY WINDOW: Default day is {start_time} – 21:00.
+- Assign "start_time" (HH:MM) to each experience so the day flows 06:00–21:00.
+- Aim for 5-8 experiences with 15-30 min travel time between stops."""
+
     user_prompt = f"""
     User Request: {user_query}
     Target City: {city}
-    Budget Range: ₹{budget_range}{interest_context}{time_context}{date_context}{duration_context}
+    Budget Range: ₹{budget_range}
+    Number of Days: {num_days}{interest_context}{time_context}{date_context}{duration_context}
     
     Find specific, actionable experiences that fit the 'Sidequest' vibe (Plot-first, meaningful, local).
     """
 
     try:
-        logger.info("📡 Calling Gemini API...")
-        
-        # Generate content
-        response = model.generate_content(
-            user_prompt,
-            generation_config=generation_config,
-            safety_settings=safety_settings
-        )
+        logger.info(f"📡 Calling Perplexity API ({PERPLEXITY_MODEL})...")
+
+        content = call_perplexity(DISCOVERY_SYSTEM_PROMPT, user_prompt, model=PERPLEXITY_MODEL)
 
         logger.info("✅ API Response received")
-        logger.info(f"Response length: {len(response.text)} characters")
-        
-        # Parse JSON output
-        # Since we used response_mime_type="application/json", response.text should be pure JSON
-        result_json = json.loads(response.text)
+        logger.info(f"Response length: {len(content)} characters")
+
+        result_json = json.loads(content)
         
         # Add metadata for debugging/demo
         result_json['search_metadata'] = {
             "agent": "Discovery Agent",
-            "model": "gemini-2.0-flash",
+            "model": PERPLEXITY_MODEL,
             "city": city,
+            "num_days": num_days,
             "time_filter": time_of_day,
             "time_constraint_applied": time_constraint is not None,
             "date_filter": parsed_date.strftime('%Y-%m-%d') if parsed_date else None,
@@ -494,7 +503,6 @@ DURATION CONSTRAINT: User has only {time_available_hours} hours available (start
         logger.error("="*60)
         logger.error("❌ JSON PARSING ERROR")
         logger.error(f"Error: {e}")
-        logger.error(f"Response text: {response.text[:500]}...")
         logger.error("="*60)
         return {
             "discovered_experiences": [], 
