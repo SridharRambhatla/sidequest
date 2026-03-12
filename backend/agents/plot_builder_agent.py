@@ -3,14 +3,14 @@ Sidequest — Plot-Builder Agent (Innovation Core)
 
 Generates narrative itineraries with emotional arcs, lore layering, and intentional friction.
 This is the core differentiator — stories, not lists.
-Uses Perplexity sonar-pro for creative storytelling.
+Uses Gemini via Vertex AI for creative storytelling.
 """
 
 import json
 from datetime import datetime
 
 from state.schemas import AgentState
-from utils.perplexity import acall_perplexity, PRO_MODEL
+from utils.llm_caller import call_llm
 
 
 PLOT_BUILDER_SYSTEM_PROMPT = """You are the Plot-Builder Agent for Sidequest, the core creative engine.
@@ -123,7 +123,7 @@ Craft a narrative that fits within the {time_available}-hour window starting at 
 Select the best 2-4 experiences that can be realistically completed in this time.
 Weave them into a journey with setup, friction, and payoff."""
 
-        response_text = await acall_perplexity(PLOT_BUILDER_SYSTEM_PROMPT, user_prompt, model=PRO_MODEL)
+        response_text = await call_llm(PLOT_BUILDER_SYSTEM_PROMPT, user_prompt)
         result = json.loads(response_text)
         state["narrative_itinerary"] = result.get("narrative_itinerary", "")
         state["collision_suggestion"] = result.get("collision_suggestion", {})

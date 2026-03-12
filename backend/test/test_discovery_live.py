@@ -3,9 +3,10 @@ Quick test script to verify discovery agent is working with enhanced logging.
 """
 import sys
 import json
+import asyncio
 from agents.discovery_agent import run_discovery_agent
 
-def test_discovery():
+async def test_discovery():
     """Test the discovery agent with a sample query."""
     print("\n" + "="*60)
     print("🧪 TESTING DISCOVERY AGENT")
@@ -23,7 +24,7 @@ def test_discovery():
     print("\n")
     
     # Run the agent
-    result = run_discovery_agent(test_state)
+    result = await run_discovery_agent(test_state)
     
     # Display results
     print("\n" + "="*60)
@@ -53,7 +54,7 @@ def test_discovery():
 
 if __name__ == "__main__":
     try:
-        success = test_discovery()
+        success = asyncio.run(test_discovery())
         sys.exit(0 if success else 1)
     except Exception as e:
         print(f"\n❌ TEST FAILED: {e}")

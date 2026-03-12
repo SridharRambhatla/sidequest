@@ -13,7 +13,7 @@ load_dotenv()
 
 # Import geocoding utility
 from utils.geocoding import geocode_experiences
-from utils.perplexity import call_perplexity, PRO_MODEL
+from utils.llm_caller import call_llm
 
 
 # --- DATE PARSING UTILITY ---
@@ -311,11 +311,8 @@ def parse_num_days_from_query(query: str) -> int:
     return 1
 
 
-# --- 3. API CONFIGURATION ---
-PERPLEXITY_MODEL = PRO_MODEL
-
 # --- 3. AGENT FUNCTION ---
-def run_discovery_agent(state: Dict[str, Any]) -> Dict[str, Any]:
+async def run_discovery_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Executes the Discovery Agent.
     
@@ -412,19 +409,39 @@ DAY WINDOW: Default day is {start_time} – 21:00.
 - Assign "start_time" (HH:MM) to each experience so the day flows 06:00–21:00.
 - Aim for 5-8 experiences with 15-30 min travel time between stops."""
 
+    # Optional: Fetch Reddit posts for enrichment
+    reddit_context = ""
+    sources = []
+    
+    if os.getenv("ENABLE_REDDIT_ENRICHMENT", "false").lower() == "true":
+        try:
+            from data_sources.reddit_simple import SimpleRedditClient, format_reddit_context
+            logger.info("🔍 Fetching Reddit enrichment...")
+            reddit = SimpleRedditClient()
+            posts = reddit.get_posts(city, user_query, limit=5)
+            reddit_context = format_reddit_context(posts)
+            sources = [{"title": p["title"], "url": p["url"], 
+                       "source_label": p["source_label"]} for p in posts]
+            if posts:
+                logger.info(f"✅ Found {len(posts)} Reddit posts for enrichment")
+        except Exception as e:
+            logger.warning(f"⚠️ Reddit enrichment failed: {e}")
+
     user_prompt = f"""
     User Request: {user_query}
     Target City: {city}
     Budget Range: ₹{budget_range}
     Number of Days: {num_days}{interest_context}{time_context}{date_context}{duration_context}
     
+    {reddit_context}
+    
     Find specific, actionable experiences that fit the 'Sidequest' vibe (Plot-first, meaningful, local).
     """
 
     try:
-        logger.info(f"📡 Calling Perplexity API ({PERPLEXITY_MODEL})...")
+        logger.info(f"📡 Calling Gemini API...")
 
-        content = call_perplexity(DISCOVERY_SYSTEM_PROMPT, user_prompt, model=PERPLEXITY_MODEL)
+        content = await call_llm(DISCOVERY_SYSTEM_PROMPT, user_prompt)
 
         logger.info("✅ API Response received")
         logger.info(f"Response length: {len(content)} characters")
@@ -434,18 +451,26 @@ DAY WINDOW: Default day is {start_time} – 21:00.
         # Add metadata for debugging/demo
         result_json['search_metadata'] = {
             "agent": "Discovery Agent",
-            "model": PERPLEXITY_MODEL,
+            "model": "gemini-2.0-flash",
             "city": city,
             "num_days": num_days,
             "time_filter": time_of_day,
             "time_constraint_applied": time_constraint is not None,
             "date_filter": parsed_date.strftime('%Y-%m-%d') if parsed_date else None,
             "day_of_week": day_of_week,
-            "date_constraint_applied": date_constraint is not None
+            "date_constraint_applied": date_constraint is not None,
+            "reddit_enrichment_enabled": os.getenv("ENABLE_REDDIT_ENRICHMENT", "false").lower() == "true"
         }
         
         experiences_count = len(result_json.get('discovered_experiences', []))
         logger.info(f"✨ Discovery Agent found {experiences_count} experiences")
+        
+        # Attach sources to discovered experiences if available
+        if sources and result_json.get('discovered_experiences'):
+            logger.info(f"📎 Attaching {len(sources)} sources to experiences")
+            for exp in result_json['discovered_experiences']:
+                if 'sources' not in exp:
+                    exp['sources'] = sources[:3]  # Attach up to 3 sources per experience
         
         # Geocode all experiences to add coordinates
         if result_json.get('discovered_experiences'):
@@ -524,6 +549,8 @@ run_discovery = run_discovery_agent
 
 # --- 4. EXAMPLE USAGE (For testing) ---
 if __name__ == "__main__":
+    import asyncio
+    
     # Simulate a user state coming from the Supervisor
     test_state = {
         "user_query": "I want a solo date idea involving art or crafts, maybe something messy like pottery.",
@@ -531,5 +558,5 @@ if __name__ == "__main__":
         "budget_range": "1000-2500"
     }
     
-    result = run_discovery_agent(test_state)
+    result = asyncio.run(run_discovery_agent(test_state))
     print(json.dumps(result, indent=2))

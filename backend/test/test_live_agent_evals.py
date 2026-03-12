@@ -90,7 +90,7 @@ class DiscoveryAgentEval:
             interest_pods=["craft_explorer"],
         )
         
-        result = run_discovery_agent(state)
+        result = await run_discovery_agent(state)
         
         # Validate output
         assert "discovered_experiences" in result, "Missing discovered_experiences"
@@ -129,14 +129,14 @@ class DiscoveryAgentEval:
             query="experiences in Bangalore",
             interest_pods=["food_nerd"],
         )
-        result_food = run_discovery_agent(state_food)
+        result_food = await run_discovery_agent(state_food)
         
         # Test with craft interest
         state_craft = create_test_state(
             query="experiences in Bangalore",
             interest_pods=["craft_explorer"],
         )
-        result_craft = run_discovery_agent(state_craft)
+        result_craft = await run_discovery_agent(state_craft)
         
         food_experiences = result_food.get("discovered_experiences", [])
         craft_experiences = result_craft.get("discovered_experiences", [])
@@ -182,7 +182,7 @@ class DiscoveryAgentEval:
             budget_range=(200, 1000),
         )
         
-        result = run_discovery_agent(state)
+        result = await run_discovery_agent(state)
         experiences = result.get("discovered_experiences", [])
         
         print(f"  Found {len(experiences)} experiences")

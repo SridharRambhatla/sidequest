@@ -2,14 +2,14 @@
 Sidequest — Community Agent
 
 Solo-sure filtering, social scaffolding cues, and ambient belonging indicators.
-Uses Perplexity sonar (fast model) for pattern matching.
+Uses Gemini via Vertex AI for pattern matching.
 """
 
 import json
 from datetime import datetime
 
 from state.schemas import AgentState
-from utils.perplexity import acall_perplexity, FAST_MODEL
+from utils.llm_caller import call_llm
 
 
 COMMUNITY_SYSTEM_PROMPT = """You are the Community Agent for Sidequest.
@@ -74,7 +74,7 @@ Solo Visitor: {state.get('solo_preference', True)}
 
 Provide honest, encouraging solo-sure assessments."""
 
-        response_text = await acall_perplexity(COMMUNITY_SYSTEM_PROMPT, user_prompt, model=FAST_MODEL)
+        response_text = await call_llm(COMMUNITY_SYSTEM_PROMPT, user_prompt)
         result = json.loads(response_text)
         state["social_scaffolding"] = result.get("social_scaffolding", {})
 

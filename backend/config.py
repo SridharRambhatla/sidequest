@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     langsmith_project: str = os.getenv("LANGSMITH_PROJECT", "sidequest-dev")
     langsmith_tracing: bool = os.getenv("LANGSMITH_TRACING", "false").lower() == "true"
 
+    # Reddit API (optional for context enrichment)
+    reddit_client_id: str = os.getenv("REDDIT_CLIENT_ID", "")
+    reddit_client_secret: str = os.getenv("REDDIT_CLIENT_SECRET", "")
+    enable_reddit_enrichment: bool = os.getenv("ENABLE_REDDIT_ENRICHMENT", "false").lower() == "true"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

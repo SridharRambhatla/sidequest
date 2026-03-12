@@ -373,13 +373,8 @@ async def discover_experiences(request: DiscoverRequest):
             "interest_pods": [],
         }
         
-        # Run discovery agent (in thread pool to avoid blocking)
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None,
-            run_discovery_agent,
-            agent_state
-        )
+        # Run discovery agent (now async)
+        result = await run_discovery_agent(agent_state)
         
         # Transform agent results
         raw_experiences = result.get("discovered_experiences", [])

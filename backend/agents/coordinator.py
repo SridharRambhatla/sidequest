@@ -132,7 +132,7 @@ async def run_workflow(request: ItineraryRequest) -> ItineraryResponse:
 
     # ── Step 1: Discovery ──────────────────────────────────
     discovery_start = datetime.now()
-    discovery_result = run_discovery(state)
+    discovery_result = await run_discovery(state)
     discovery_latency = (datetime.now() - discovery_start).total_seconds() * 1000
     
     # Merge discovery results into state

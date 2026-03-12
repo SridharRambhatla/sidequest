@@ -31,7 +31,7 @@ async def test_discovery_with_logging():
     
     try:
         print("Calling discovery agent...")
-        result = run_discovery_agent(test_state)
+        result = await run_discovery_agent(test_state)
         
         print(f"\n✓ Agent executed successfully")
         print(f"✓ Found {len(result.get('discovered_experiences', []))} experiences")

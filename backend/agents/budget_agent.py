@@ -2,14 +2,14 @@
 Sidequest — Budget Optimizer Agent
 
 Cost transparency, deals discovery, and booking timeline recommendations.
-Uses Perplexity sonar (fast model) for numerical analysis.
+Uses Gemini via Vertex AI for numerical analysis.
 """
 
 import json
 from datetime import datetime
 
 from state.schemas import AgentState
-from utils.perplexity import acall_perplexity, FAST_MODEL
+from utils.llm_caller import call_llm
 
 
 BUDGET_SYSTEM_PROMPT = """You are the Budget Optimizer Agent for Sidequest.
@@ -93,7 +93,7 @@ Number of People: {state['num_people']}
 Provide realistic INR pricing for {state['city']}.
 IMPORTANT: Ensure total_estimate ≤ ₹{budget_max}. If experiences exceed budget, suggest alternatives."""
 
-        response_text = await acall_perplexity(BUDGET_SYSTEM_PROMPT, user_prompt, model=FAST_MODEL)
+        response_text = await call_llm(BUDGET_SYSTEM_PROMPT, user_prompt)
         result = json.loads(response_text)
         budget_breakdown = result.get("budget_breakdown", {})
         

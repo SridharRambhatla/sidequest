@@ -4,9 +4,10 @@ Tests if different queries return appropriately different results.
 """
 
 import json
+import asyncio
 from agents.discovery_agent import run_discovery_agent
 
-def test_query(query_description, user_query):
+async def test_query(query_description, user_query):
     """Test a specific query and print results."""
     print("\n" + "="*80)
     print(f"TEST: {query_description}")
@@ -18,7 +19,7 @@ def test_query(query_description, user_query):
         "budget_range": (500, 2000)
     }
     
-    result = run_discovery_agent(test_state)
+    result = await run_discovery_agent(test_state)
     
     if "error" in result:
         print(f"❌ ERROR: {result['error']}")
@@ -43,21 +44,21 @@ def test_query(query_description, user_query):
     
     return result
 
-if __name__ == "__main__":
+async def main():
     # Test 1: Pottery/Craft query
-    result1 = test_query(
+    result1 = await test_query(
         "Pottery and Craft Activities",
         "I want pottery workshops and craft activities for a solo traveler"
     )
     
     # Test 2: Food and Drinks query
-    result2 = test_query(
+    result2 = await test_query(
         "Food and Drinks Experiences",
         "I want food and drinks experiences, cafes, restaurants, and culinary tours"
     )
     
     # Test 3: Heritage walks
-    result3 = test_query(
+    result3 = await test_query(
         "Heritage Walks",
         "I want heritage walks and historical tours in old Bangalore"
     )
@@ -83,3 +84,6 @@ if __name__ == "__main__":
                 print(f"  - {name}")
         else:
             print("\n✅ No duplicate experiences - queries return different results")
+
+if __name__ == "__main__":
+    asyncio.run(main())

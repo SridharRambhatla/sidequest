@@ -3,14 +3,15 @@ Sidequest — Cultural Context Agent
 
 Adds India-specific localization beyond translation: timing nuances, dress codes,
 transport hacks, social norms, safety info.
-Uses Perplexity sonar-pro for deeper cultural reasoning.
+Uses Gemini via Vertex AI for cultural reasoning.
 """
 
 import json
+import os
 from datetime import datetime
 
 from state.schemas import AgentState
-from utils.perplexity import acall_perplexity, FAST_MODEL
+from utils.llm_caller import call_llm
 
 
 CULTURAL_CONTEXT_SYSTEM_PROMPT = """You are a cultural context agent for Sidequest (India travel platform).
@@ -30,7 +31,7 @@ async def run_cultural_context(state: AgentState) -> AgentState:
     Execute the Cultural Context Agent.
 
     Takes discovered experiences and enriches them with India-specific
-    cultural annotations.
+    cultural annotations. Optionally enriches with Reddit community insights.
     """
     start_time = datetime.now()
 
@@ -52,6 +53,29 @@ async def run_cultural_context(state: AgentState) -> AgentState:
             for e in experiences[:3]
         ]
 
+        # Optional: Fetch Reddit posts for enrichment
+        reddit_context = ""
+        sources = []
+        
+        if os.getenv("ENABLE_REDDIT_ENRICHMENT", "false").lower() == "true":
+            try:
+                from data_sources.reddit_simple import SimpleRedditClient, format_reddit_context
+                
+                reddit = SimpleRedditClient()
+                city = state.get("city", "")
+                posts = reddit.get_posts(city, f"things to do {city}", limit=5)
+                reddit_context = format_reddit_context(posts)
+                sources = [
+                    {
+                        "title": p["title"], 
+                        "url": p["url"], 
+                        "source_label": p["source_label"]
+                    } 
+                    for p in posts
+                ]
+            except Exception as e:
+                print(f"Reddit enrichment failed: {e}")
+
         user_prompt = f"""Add cultural context for these experiences in {state['city']}:
 
 Experiences:
@@ -60,12 +84,21 @@ Experiences:
 City: {state['city']}
 Solo Visitor: {state.get('solo_preference', True)}
 
+{reddit_context}
+
 Be concise — 1-2 sentences per field only.
 """
 
-        response_text = await acall_perplexity(CULTURAL_CONTEXT_SYSTEM_PROMPT, user_prompt, model=FAST_MODEL)
+        response_text = await call_llm(CULTURAL_CONTEXT_SYSTEM_PROMPT, user_prompt)
         result = json.loads(response_text)
-        state["cultural_context"] = result.get("cultural_context", {})
+        cultural_context = result.get("cultural_context", {})
+        
+        # Attach sources to each experience if available
+        if sources:
+            for exp_name in cultural_context:
+                cultural_context[exp_name]["sources"] = sources[:3]
+        
+        state["cultural_context"] = cultural_context
 
         state["agent_trace"].append({
             "agent": "cultural_context",
