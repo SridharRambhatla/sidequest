@@ -230,29 +230,22 @@ logger = logging.getLogger(__name__)
 # --- 1. SYSTEM PROMPT ---
 DISCOVERY_SYSTEM_PROMPT = """You are the Discovery Agent for Sidequest, a plot-first experience discovery platform.
 
-Your role is to find compelling, unique experiences based on the user's query and preferences.
+Your role is to find compelling, unique experiences in {city} based on the user's query and preferences.
 
-Given the user's input, discover and return 10-15 relevant experiences. Focus on:
+Given the user's input, discover and return 10-15 relevant experiences in {city}. Focus on:
 1. UNIQUE, LESSER-KNOWN GEMS that are NOT commonly featured on mainstream travel sites
 2. Hyperlocal spots not easily found on Google Maps (specific artisan names, hidden cafes, specific workshops)
 3. Artisan workshops, heritage walks, cultural immersions
 4. Solo-friendly activities with social scaffolding potential
 5. Experiences with story potential (lore, provenance, friction)
 
-IMPORTANT: Avoid these well-known/commonly curated Bangalore spots (we already have them):
-- CTR Malleshwaram, Vidyarthi Bhavan, Brahmin's Coffee Bar, MTR, Airlines Hotel
-- Toit Brewery, The Humming Tree
-- Cubbon Park Run Club, Lalbagh, Nandi Hills, Sankey Tank
-- Bangalore Palace, Bull Temple, National Gallery of Modern Art
-- Commercial Street, Clay Station
-
-Instead, discover HIDDEN GEMS like:
-- Neighborhood-specific darshinis and thindi streets
-- Lesser-known artisan workshops (not the famous ones)
+IMPORTANT: Avoid well-known tourist traps and mainstream attractions. Instead, discover HIDDEN GEMS like:
+- Neighborhood-specific local eateries and street food spots
+- Lesser-known artisan workshops and craft studios
 - Secret rooftops, basement bars, speakeasy-style venues
-- Community-run cultural events
+- Community-run cultural events and gatherings
 - Emerging neighborhoods with unique character
-- Time-specific events (monthly markets, seasonal festivals)
+- Time-specific events (monthly markets, seasonal festivals, local celebrations)
 
 CRITICAL: If a specific date or day is mentioned, ONLY return experiences that are ACTUALLY OPEN/AVAILABLE on that day.
 - Check if the experience operates on the requested day of the week
@@ -281,8 +274,8 @@ For each experience, provide:
 - duration_hours: Estimated time to fully enjoy this experience (e.g., 1.5, 2, 3). Be realistic.
 - operating_days: Array of days when open, e.g., ["monday", ..., "friday"] or ["saturday", "sunday"] or ["daily"]
 - operating_hours: String describing hours, e.g., "10 AM - 6 PM"
-- budget: Estimated cost in INR (Integer only)
-- location: Neighborhood/area in the city
+- budget: Estimated cost in local currency (Integer only)
+- location: Neighborhood/area in {city}
 - solo_friendly: Boolean (true/false)
 - source: Where you found this (instagram, blog, local_knowledge, etc.)
 - description: 2-3 sentence vivid description emphasizing the "vibe" and sensory details.
@@ -325,7 +318,7 @@ async def run_discovery_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     
     user_query = state.get("user_query", "")
-    city = state.get("city", "Bangalore") # Default to Bangalore as per MVP
+    city = state.get("city")  # No default - city must be provided
     budget_range = state.get("budget_range", "500-2000")
     interest_pods = state.get("interest_pods", [])
     time_available_hours = state.get("time_available_hours", 8.0)  # Default to 8 hours
@@ -435,13 +428,16 @@ DAY WINDOW: Default day is {start_time} – 21:00.
     
     {reddit_context}
     
-    Find specific, actionable experiences that fit the 'Sidequest' vibe (Plot-first, meaningful, local).
+    Find specific, actionable experiences in {city} that fit the 'Sidequest' vibe (Plot-first, meaningful, local).
     """
 
     try:
-        logger.info(f"📡 Calling Gemini API...")
+        logger.info(f"📡 Calling Gemini API for city: {city}...")
 
-        content = await call_llm(DISCOVERY_SYSTEM_PROMPT, user_prompt)
+        # Format system prompt with city variable
+        formatted_system_prompt = DISCOVERY_SYSTEM_PROMPT.format(city=city)
+        
+        content = await call_llm(formatted_system_prompt, user_prompt)
 
         logger.info("✅ API Response received")
         logger.info(f"Response length: {len(content)} characters")

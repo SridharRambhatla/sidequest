@@ -204,8 +204,8 @@ class TestSchemaValidation:
 
     def test_itinerary_request_defaults(self):
         """Test ItineraryRequest default values."""
-        request = ItineraryRequest(query="Test query")
-        assert request.city == "Bangalore"
+        request = ItineraryRequest(query="Test query", city="bangalore")
+        assert request.city == "bangalore"
         assert request.budget_min == 200
         assert request.budget_max == 5000
         assert request.num_people == 1

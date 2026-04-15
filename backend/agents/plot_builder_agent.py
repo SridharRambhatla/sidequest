@@ -66,6 +66,7 @@ async def run_plot_builder(state: AgentState) -> AgentState:
     into a narrative itinerary with story arc.
     """
     agent_start_time = datetime.now()
+    city = state.get('city', 'unknown')
 
     try:
         experiences = state.get("discovered_experiences", [])
@@ -73,6 +74,7 @@ async def run_plot_builder(state: AgentState) -> AgentState:
             state["narrative_itinerary"] = "No experiences found to build a story around. Try a different query!"
             state["agent_trace"].append({
                 "agent": "plot_builder",
+                "city": city,
                 "status": "skipped",
                 "reason": "No experiences available",
                 "latency_ms": 0,
@@ -130,6 +132,7 @@ Weave them into a journey with setup, friction, and payoff."""
 
         state["agent_trace"].append({
             "agent": "plot_builder",
+            "city": city,
             "status": "success",
             "narrative_length": len(state["narrative_itinerary"]),
             "has_collision": bool(state["collision_suggestion"]),
@@ -140,11 +143,13 @@ Weave them into a journey with setup, friction, and payoff."""
     except Exception as e:
         state["errors"].append({
             "agent": "plot_builder",
+            "city": city,
             "error": str(e),
             "timestamp": agent_start_time.isoformat(),
         })
         state["agent_trace"].append({
             "agent": "plot_builder",
+            "city": city,
             "status": "error",
             "error": str(e),
             "latency_ms": (datetime.now() - agent_start_time).total_seconds() * 1000,

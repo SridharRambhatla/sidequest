@@ -14,10 +14,12 @@ def _now_iso() -> str:
     return datetime.now().isoformat()
 
 
-# 25 Curated Bangalore Experiences
+# Curated Experiences for Multiple Cities
 CURATED_EXPERIENCES: List[dict] = [
+    # Bangalore Experiences (25)
     {
         "id": "exp-001",
+        "city": "bangalore",
         "name": "CTR Benne Dosa at Malleshwaram",
         "category": "Food & Drink",
         "description_short": "Legendary 1920s dosa joint where locals queue 20+ minutes for buttery, crispy benne dosas. Counter seating makes for easy conversations.",
@@ -44,6 +46,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-002",
+        "city": "bangalore",
         "name": "Pottery Workshop at Clay Station",
         "category": "Craft Workshop",
         "description_short": "Hands-on wheel throwing for beginners. 60% attendees come solo. Instructor facilitates introductions, messy creativity guaranteed.",
@@ -71,6 +74,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-003",
+        "city": "bangalore",
         "name": "Cubbon Park Morning Run Club",
         "category": "Fitness",
         "description_short": "Free community run every Saturday 6AM. All paces welcome. Post-run chai and conversations at the bandstand.",
@@ -97,6 +101,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-004",
+        "city": "bangalore",
         "name": "Heritage Walk: Basavanagudi",
         "category": "Heritage Walk",
         "description_short": "Discover the Bull Temple, Dodda Ganesha, and 100-year-old homes. Walk through streets where Bangalore's old soul still breathes.",
@@ -124,6 +129,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-005",
+        "city": "bangalore",
         "name": "Indian Coffee House",
         "category": "Food & Drink",
         "description_short": "Since 1958. Filter coffee and nostalgia in equal measure. Writers, dreamers, and solo thinkers have claimed these tables for decades.",
@@ -150,6 +156,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-006",
+        "city": "bangalore",
         "name": "Atta Galatta Bookstore & Cafe",
         "category": "Art & Culture",
         "description_short": "Independent bookstore hosting poetry nights, book launches, and quiet reading corners. Coffee, books, and kindred spirits.",
@@ -176,6 +183,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-007",
+        "city": "bangalore",
         "name": "Lalbagh Botanical Garden",
         "category": "Nature",
         "description_short": "240 acres of century-old trees, the famous Glass House, and Sunday flower shows. Perfect for morning walks and botanical wonder.",
@@ -202,6 +210,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-008",
+        "city": "bangalore",
         "name": "Sofar Sounds Secret Concert",
         "category": "Nightlife",
         "description_short": "Location revealed 24hrs before. Intimate living room concerts with 50-80 music lovers. BYOB, no phones, pure music.",
@@ -229,6 +238,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-009",
+        "city": "bangalore",
         "name": "Commercial Street Shopping",
         "category": "Shopping",
         "description_short": "Bangalore's oldest shopping street. Bargain for everything from fabric to footwear. Chaos, colors, and serious deals.",
@@ -255,6 +265,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-010",
+        "city": "bangalore",
         "name": "Sankey Tank Sunset Walk",
         "category": "Nature",
         "description_short": "Victorian-era lake in the heart of the city. Watch pelicans, spot painted storks, and catch golden hour reflections.",
@@ -281,6 +292,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-011",
+        "city": "bangalore",
         "name": "Bangalore Palace Tour",
         "category": "Heritage Walk",
         "description_short": "Tudor-style palace built in 1887. Wood carvings, stained glass, and royal history. Audio guide included.",
@@ -307,6 +319,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-012",
+        "city": "bangalore",
         "name": "Ulsoor Lake Kayaking",
         "category": "Fitness",
         "description_short": "Urban kayaking at sunrise. Paddle through lotus beds while the city wakes up. Equipment and basic training included.",
@@ -334,6 +347,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-013",
+        "city": "bangalore",
         "name": "Vidyarthi Bhavan Masala Dosa",
         "category": "Food & Drink",
         "description_short": "Since 1943. The crispy, ghee-laden masala dosa here is a pilgrimage for food lovers. Arrive early to avoid 30-min queues.",
@@ -360,6 +374,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-014",
+        "city": "bangalore",
         "name": "Brahmin's Coffee Bar",
         "category": "Food & Drink",
         "description_short": "Standing-only filter coffee and idlis since 1965. The fastest breakfast in Bangalore — locals eat in 10 minutes flat.",
@@ -386,6 +401,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-015",
+        "city": "bangalore",
         "name": "MTR 1924 Lalbagh",
         "category": "Food & Drink",
         "description_short": "The original Mavalli Tiffin Rooms. Century-old recipes, impeccable service, and the rava idli that started it all.",
@@ -412,6 +428,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-016",
+        "city": "bangalore",
         "name": "Toit Brewpub",
         "category": "Nightlife",
         "description_short": "Bangalore's most beloved craft brewery. Six house beers on tap, exposed brick vibes, and the best beer-battered fries in town.",
@@ -438,6 +455,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-017",
+        "city": "bangalore",
         "name": "The Humming Tree",
         "category": "Nightlife",
         "description_short": "Indie music venue where Bangalore's alternative scene thrives. Live bands, experimental sounds, and a loyal crowd of music nerds.",
@@ -465,6 +483,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-018",
+        "city": "bangalore",
         "name": "Nandi Hills Sunrise Trek",
         "category": "Nature",
         "description_short": "Wake at 4 AM, drive 60km, and watch the sun rise above clouds at 1,478m. Paragliders float by as you sip hot chai.",
@@ -491,6 +510,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-019",
+        "city": "bangalore",
         "name": "National Gallery of Modern Art",
         "category": "Art & Culture",
         "description_short": "Colonial mansion housing Indian modernists — Tagore, Husain, Raza. Tranquil gardens and a cafe perfect for post-art contemplation.",
@@ -517,6 +537,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-020",
+        "city": "bangalore",
         "name": "Tipu Sultan's Summer Palace",
         "category": "Heritage Walk",
         "description_short": "Ornate 18th-century teak palace. Intricate carvings, Mysore-style arches, and stories of the Tiger of Mysore.",
@@ -543,6 +564,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-021",
+        "city": "bangalore",
         "name": "Candle Making at Lighthaus",
         "category": "Craft Workshop",
         "description_short": "Melt, pour, and scent your own candles. Relaxing 2-hour workshop where you leave with 3 handmade candles.",
@@ -570,6 +592,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-022",
+        "city": "bangalore",
         "name": "Airlines Hotel Thali",
         "category": "Food & Drink",
         "description_short": "Art deco interiors from 1964. The legendary unlimited thali has sustained Bangalore's workers for 60 years.",
@@ -596,6 +619,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-023",
+        "city": "bangalore",
         "name": "Hesaraghatta Lake Bird Watching",
         "category": "Nature",
         "description_short": "Grassland reservoir on city's edge. Spot flamingos, painted storks, and 150+ bird species. Best at dawn with binoculars.",
@@ -622,6 +646,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-024",
+        "city": "bangalore",
         "name": "Rangoli Metro Art Center",
         "category": "Art & Culture",
         "description_short": "Free contemporary art exhibitions in the metro station. Rotating shows by local and international artists. Art while you commute.",
@@ -648,6 +673,7 @@ CURATED_EXPERIENCES: List[dict] = [
     },
     {
         "id": "exp-025",
+        "city": "bangalore",
         "name": "Perfume Making at ScentSational",
         "category": "Craft Workshop",
         "description_short": "Blend your signature scent from 40+ essential oils. Learn the art of perfumery and leave with a 30ml bottle of your creation.",
@@ -677,7 +703,7 @@ CURATED_EXPERIENCES: List[dict] = [
 
 
 def get_curated_experiences(
-    city: str = "Bangalore",
+    city: str,
     categories: Optional[List[str]] = None,
     budget_min: int = 0,
     budget_max: int = 10000,
@@ -688,7 +714,7 @@ def get_curated_experiences(
     Get filtered curated experiences.
     
     Args:
-        city: Target city (currently only Bangalore supported)
+        city: Target city (e.g., "bangalore", "rishikesh", "kasol", "gokarna", "rameshwaram")
         categories: Filter by categories
         budget_min: Minimum budget in INR
         budget_max: Maximum budget in INR
@@ -698,10 +724,11 @@ def get_curated_experiences(
     Returns:
         List of filtered experiences
     """
-    if city.lower() != "bangalore":
-        return []  # Only Bangalore data available
-    
-    results = CURATED_EXPERIENCES.copy()
+    # Filter by city first
+    results = [
+        exp for exp in CURATED_EXPERIENCES
+        if exp.get("city", "").lower() == city.lower()
+    ]
     
     # Filter by categories
     if categories:

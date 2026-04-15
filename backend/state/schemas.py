@@ -26,7 +26,7 @@ class ItineraryRequest(BaseModel):
         description="Instagram Reel or YouTube URLs to extract experiences from",
     )
     city: str = Field(
-        default="Bangalore",
+        ...,
         description="Target city for experiences",
     )
     budget_min: int = Field(
@@ -194,7 +194,7 @@ class DiscoverRequest(BaseModel):
         description="Optional search query to filter experiences"
     )
     city: str = Field(
-        default="Bangalore",
+        ...,
         description="Target city for experiences"
     )
     categories: list[str] = Field(

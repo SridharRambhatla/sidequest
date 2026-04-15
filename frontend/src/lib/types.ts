@@ -10,7 +10,7 @@
 export interface ItineraryRequest {
   query: string;
   social_media_urls?: string[];
-  city?: string;
+  city: string; // Required - city must be selected by user
   budget_min?: number;
   budget_max?: number;
   num_people?: number;
@@ -151,6 +151,22 @@ export interface AgentState {
   status: AgentStatus;
   progress: number;
   message?: string;
+}
+
+// ============================================
+// City Types
+// ============================================
+
+export interface City {
+  id: string;
+  display_name: string;
+  country: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  timezone?: string;
+  currency?: string;
 }
 
 // ============================================

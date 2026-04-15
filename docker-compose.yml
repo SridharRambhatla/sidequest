@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: sidequest-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION}
+      - BACKEND_PORT=8000
+      - BACKEND_HOST=0.0.0.0
+      - AGENT_LOG_LEVEL=${AGENT_LOG_LEVEL:-INFO}
+      - AGENT_LOG_DIR=logs
+      - AGENT_LOG_FILE_ENABLED=${AGENT_LOG_FILE_ENABLED:-true}
+      - AGENT_LOG_CONSOLE_ENABLED=${AGENT_LOG_CONSOLE_ENABLED:-true}
+      - AGENT_LOG_FORMAT=${AGENT_LOG_FORMAT:-json}
+      - AGENT_LOG_SANITIZE=${AGENT_LOG_SANITIZE:-true}
+      - REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
+      - REDDIT_CLIENT_SECRET=${REDDIT_CLIENT_SECRET}
+      - ENABLE_REDDIT_ENRICHMENT=${ENABLE_REDDIT_ENRICHMENT:-false}
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./backend/data:/app/data
+      - ./backend/state:/app/state
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+        - NEXT_PUBLIC_OPENWEATHER_API_KEY=${NEXT_PUBLIC_OPENWEATHER_API_KEY}
+    container_name: sidequest-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_OPENWEATHER_API_KEY=${NEXT_PUBLIC_OPENWEATHER_API_KEY}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  default:
+    name: sidequest-network

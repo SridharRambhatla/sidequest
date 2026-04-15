@@ -24,6 +24,16 @@ User Input → Coordinator (Supervisor)
 
 ## 🚀 Quick Start
 
+**📚 New to the project?** Start with [TEAM_GUIDE.md](./TEAM_GUIDE.md) for a friendly walkthrough!
+
+**📖 Looking for specific docs?** See [DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md) for all guides.
+
+**⚡ Want the fastest setup?** See [QUICK_START.md](./QUICK_START.md) for a 5-minute guide.
+
+**🐳 Using Docker?** See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for containerized deployment.
+
+**🗺️ Maps not working?** See [GOOGLE_MAPS_SETUP.md](./GOOGLE_MAPS_SETUP.md) to fix API errors.
+
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
@@ -55,6 +65,22 @@ npm run dev
 ```
 
 Opens at `http://localhost:3000`.
+
+### Docker Setup (Recommended)
+
+```bash
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your API keys
+
+# Build and run
+docker-compose up --build
+```
+
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+
+See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for detailed Docker instructions.
 
 **Frontend Features:**
 - Custom calming design system (soft blues, muted greens, warm terracotta)

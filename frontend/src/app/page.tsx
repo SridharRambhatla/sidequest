@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,17 +15,16 @@ import {
   ChevronUp,
   IndianRupee,
   UserCheck,
-  MapPin,
   ArrowRight,
   Compass,
   Search,
   X,
 } from 'lucide-react';
 import { InterestPodSelector } from '@/components/filter-chips';
-import { InputFormState, DiscoveryExperience } from '@/lib/types';
-import { defaultFormState } from '@/lib/api';
+import { InputFormState, DiscoveryExperience, City } from '@/lib/types';
+import { defaultFormState, fetchCities } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
+import { CitySelector } from '@/components/city-selector';
 import {
   DiscoveryCard,
   DiscoveryCardSkeleton,
@@ -43,23 +42,43 @@ const quickFilters = [
 
 export default function HomePage() {
   const router = useRouter();
-  const [formState, setFormState] = useState<InputFormState>(defaultFormState);
+  const [formState, setFormState] = useState<InputFormState>({
+    ...defaultFormState,
+    city: '', // No default city - require user selection
+  });
   const [showPreferences, setShowPreferences] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cities, setCities] = useState<City[]>([]);
   
   // Explore section state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeQuickFilters, setActiveQuickFilters] = useState<string[]>([]);
 
-  // Fetch experiences from API with auto-refresh
+  // Load cities on mount
+  useEffect(() => {
+    async function loadCities() {
+      try {
+        const fetchedCities = await fetchCities();
+        setCities(fetchedCities);
+      } catch (err) {
+        console.error('Failed to fetch cities:', err);
+      }
+    }
+    loadCities();
+  }, []);
+
+  // Fetch experiences from API with auto-refresh, filtered by selected city
   const {
     experiences: allExperiences,
     isLoading,
     isFallback,
     refetch,
   } = useExperiences({
-    fetchOnMount: true,
+    initialRequest: {
+      city: formState.city || undefined,
+    },
+    fetchOnMount: !!formState.city, // Only fetch if city is selected
     useFallback: true,
     autoRefresh: true,
     refreshInterval: 60 * 1000, // Refresh every 60 seconds on home page
@@ -115,13 +134,21 @@ export default function HomePage() {
   const hasActiveExploreFilters = searchQuery || selectedCategory !== 'all' || activeQuickFilters.length > 0;
 
   const handleSubmit = async () => {
-    if (!formState.query.trim()) return;
+    if (!formState.query.trim() || !formState.city) return;
     setIsSubmitting(true);
     sessionStorage.setItem('sidequest-form', JSON.stringify(formState));
     router.push('/generate');
   };
 
-  const canSubmit = formState.query.trim().length > 0;
+  const handleCityChange = (cityId: string) => {
+    setFormState((prev) => ({ ...prev, city: cityId }));
+    // Refetch experiences for the new city
+    if (cityId) {
+      refetch({ city: cityId });
+    }
+  };
+
+  const canSubmit = formState.query.trim().length > 0 && formState.city.length > 0;
 
   return (
     <main className="min-h-screen bg-background">
@@ -158,11 +185,12 @@ export default function HomePage() {
               onChange={(e) => setFormState((prev) => ({ ...prev, query: e.target.value }))}
             />
 
-            {/* City */}
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/50">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Exploring in</span>
-              <span className="text-sm font-medium">{formState.city}</span>
+            {/* City Selector */}
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <CitySelector
+                selectedCity={formState.city}
+                onCityChange={handleCityChange}
+              />
             </div>
 
             {/* Preferences toggle */}
@@ -260,9 +288,17 @@ export default function HomePage() {
             <h2 className="text-2xl font-semibold mb-1 flex items-center gap-2">
               <Compass className="h-6 w-6 text-primary" />
               Explore Experiences
+              {formState.city && (
+                <span className="text-lg text-muted-foreground font-normal">
+                  in {cities.find(c => c.id === formState.city)?.display_name || formState.city}
+                </span>
+              )}
             </h2>
             <p className="text-muted-foreground">
-              Or pick from curated local experiences to start your journey
+              {formState.city 
+                ? 'Or pick from curated local experiences to start your journey'
+                : 'Select a city above to explore experiences'
+              }
             </p>
           </div>
           <WeatherWidget compact />
@@ -334,18 +370,26 @@ export default function HomePage() {
         {/* Results count */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-muted-foreground">
-            {isLoading 
-              ? 'Discovering experiences...' 
-              : `${filteredExperiences.length} experience${filteredExperiences.length !== 1 ? 's' : ''}`
+            {!formState.city 
+              ? 'Select a city to see experiences'
+              : isLoading 
+                ? 'Discovering experiences...' 
+                : `${filteredExperiences.length} experience${filteredExperiences.length !== 1 ? 's' : ''}`
             }
-            {isFallback && !isLoading && (
+            {isFallback && !isLoading && formState.city && (
               <span className="ml-2 text-xs text-amber-600">(cached)</span>
             )}
           </p>
         </div>
 
         {/* Experience Grid */}
-        {isLoading ? (
+        {!formState.city ? (
+          <div className="text-center py-16">
+            <Compass className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground mb-2">Select a city to explore experiences</p>
+            <p className="text-sm text-muted-foreground">Choose your destination from the city selector above</p>
+          </div>
+        ) : isLoading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <DiscoveryCardSkeleton key={i} />

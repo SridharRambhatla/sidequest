@@ -3,7 +3,7 @@
  * Connects to the FastAPI backend for itinerary generation
  */
 
-import { ItineraryRequest, ItineraryResponse, InputFormState, DiscoveryExperience } from './types';
+import { ItineraryRequest, ItineraryResponse, InputFormState, DiscoveryExperience, City } from './types';
 
 // ──────────────────────────────────────────────
 // Types for Discovery API
@@ -11,7 +11,7 @@ import { ItineraryRequest, ItineraryResponse, InputFormState, DiscoveryExperienc
 
 export interface DiscoverRequest {
   query?: string;
-  city?: string;
+  city?: string; // Optional in request object, but validated as required by API
   categories?: string[];
   budget_min?: number;
   budget_max?: number;
@@ -59,10 +59,16 @@ export function formStateToRequest(formState: InputFormState): ItineraryRequest 
 
 /**
  * Generate an itinerary using the multi-agent backend
+ * @throws Error if city parameter is missing
  */
 export async function generateItinerary(
   request: ItineraryRequest
 ): Promise<ItineraryResponse> {
+  // Validate that city is provided
+  if (!request.city) {
+    throw new Error('City parameter is required for itinerary generation');
+  }
+
   const response = await fetch(`${API_BASE}/api/generate-itinerary`, {
     method: 'POST',
     headers: {
@@ -108,6 +114,20 @@ export async function getAgentTrace(
 }
 
 /**
+ * Fetch supported cities from the backend
+ */
+export async function fetchCities(): Promise<City[]> {
+  const response = await fetch(`${API_BASE}/api/cities`);
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch cities');
+  }
+  
+  const data = await response.json();
+  return data.cities || [];
+}
+
+/**
  * Validate if a URL is a supported social media link
  */
 export function isValidSocialMediaUrl(url: string): boolean {
@@ -137,7 +157,7 @@ export function getPlatformFromUrl(url: string): string | null {
 export const defaultFormState: InputFormState = {
   query: '',
   socialMediaUrls: [],
-  city: 'Bangalore',
+  city: '', // No default - require user selection
   budgetMin: 200,
   budgetMax: 5000,
   numPeople: 1,
@@ -154,12 +174,18 @@ export const defaultFormState: InputFormState = {
  * Discover experiences for the explore page
  * Calls the backend Discovery Agent to find experiences based on filters
  * 
- * @param request - Discovery request parameters
+ * @param request - Discovery request parameters (city is required)
  * @param request.fast_mode - If true, returns curated data only (instant). If false, combines curated + agent-generated.
+ * @throws Error if city parameter is missing
  */
 export async function discoverExperiences(
-  request: DiscoverRequest = {}
+  request: DiscoverRequest
 ): Promise<DiscoverResponse> {
+  // Validate that city is provided
+  if (!request.city) {
+    throw new Error('City parameter is required for discovery');
+  }
+
   const response = await fetch(`${API_BASE}/api/discover`, {
     method: 'POST',
     headers: {
@@ -167,7 +193,7 @@ export async function discoverExperiences(
     },
     body: JSON.stringify({
       query: request.query || null,
-      city: request.city || 'Bangalore',
+      city: request.city, // Required parameter
       categories: request.categories || [],
       budget_min: request.budget_min ?? 0,
       budget_max: request.budget_max ?? 10000,

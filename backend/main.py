@@ -14,7 +14,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from config import settings
+from settings import settings, AGENT_MODEL_CONFIG
+from config.cities import get_supported_cities, validate_city
 from state.schemas import (
     ItineraryRequest,
     ItineraryResponse,
@@ -96,6 +97,24 @@ async def health_check():
 
 
 # ──────────────────────────────────────────────
+# City Registry API
+# ──────────────────────────────────────────────
+
+@app.get("/api/cities")
+async def get_cities():
+    """
+    Get list of supported cities.
+    
+    Returns:
+        List of supported cities with metadata
+    """
+    cities = get_supported_cities()
+    return {
+        "cities": [city.to_dict() for city in cities]
+    }
+
+
+# ──────────────────────────────────────────────
 # Core API: Itinerary Generation
 # ──────────────────────────────────────────────
 
@@ -111,6 +130,14 @@ async def generate_itinerary(request: ItineraryRequest):
     4. Budget Optimizer Agent — cost breakdown
     5. Community Agent — solo-sure filtering
     """
+    # Validate city parameter
+    if not validate_city(request.city):
+        supported_cities = [city.id for city in get_supported_cities()]
+        raise HTTPException(
+            status_code=400,
+            detail=f"City '{request.city}' is not supported. Supported cities: {', '.join(supported_cities)}"
+        )
+    
     try:
         result = await run_workflow(request)
         return result
@@ -315,6 +342,14 @@ async def discover_experiences(request: DiscoverRequest):
     
     This enables progressive loading: show curated first, then enrich with agent.
     """
+    # Validate city parameter
+    if not validate_city(request.city):
+        supported_cities = [city.id for city in get_supported_cities()]
+        raise HTTPException(
+            status_code=400,
+            detail=f"City '{request.city}' is not supported. Supported cities: {', '.join(supported_cities)}"
+        )
+    
     try:
         # Get curated experiences (instant)
         curated_raw = get_curated_experiences(

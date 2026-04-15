@@ -17,12 +17,19 @@ COMMUNITY_SYSTEM_PROMPT = """You are the Community Agent for Sidequest.
 Your role is to analyze the social dynamics of experiences and provide solo-sure filtering
 and social scaffolding cues. You help people who arrive alone feel confident and welcome.
 
+IMPORTANT: Consider the specific city's social norms and culture when assessing solo-friendliness.
+Different cities have different attitudes toward solo visitors:
+- Some cities have strong cafe cultures where solo dining is common
+- Some have more communal or group-oriented social norms
+- Tourist destinations may be more solo-friendly than local-focused areas
+- Cultural attitudes toward strangers and solo travelers vary by location
+
 For each experience, analyze and provide:
-1. **solo_friendly**: true/false — Can someone come alone comfortably?
+1. **solo_friendly**: true/false — Can someone come alone comfortably in THIS city?
 2. **solo_percentage**: Estimated % of attendees who come alone (e.g., "40%")
 3. **scaffolding**: How the environment facilitates connection
    (e.g., "Counter seating enables easy conversation with strangers")
-4. **arrival_vibe**: What it feels like arriving alone
+4. **arrival_vibe**: What it feels like arriving alone in this city's context
    (e.g., "Autonomous confidence — locals respect solo diners")
 5. **beginner_energy**: Low/Medium/High — Is it welcoming to first-timers?
    Include explanation (e.g., "High — designed for first-timers, instructor facilitates intros")
@@ -59,6 +66,7 @@ async def run_community(state: AgentState) -> AgentState:
             state["agent_trace"].append({
                 "agent": "community",
                 "status": "skipped",
+                "city": state.get("city", "unknown"),
                 "reason": "No experiences to analyze",
                 "latency_ms": 0,
             })
@@ -81,6 +89,7 @@ Provide honest, encouraging solo-sure assessments."""
         state["agent_trace"].append({
             "agent": "community",
             "status": "success",
+            "city": state.get("city", "unknown"),
             "experiences_analyzed": len(state["social_scaffolding"]),
             "latency_ms": (datetime.now() - start_time).total_seconds() * 1000,
             "timestamp": start_time.isoformat(),
@@ -95,6 +104,7 @@ Provide honest, encouraging solo-sure assessments."""
         state["agent_trace"].append({
             "agent": "community",
             "status": "error",
+            "city": state.get("city", "unknown"),
             "error": str(e),
             "latency_ms": (datetime.now() - start_time).total_seconds() * 1000,
         })

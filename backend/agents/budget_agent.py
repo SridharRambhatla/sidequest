@@ -33,7 +33,7 @@ Also provide:
 - Deals: Early bird pricing, group discounts, BNPL options
 - Booking urgency: "Book 3 days ahead (sells out)" or "Walk-in available"
 - Budget alternatives: Cheaper options if over budget
-- Cost-saving tips: "Take metro instead of auto, save ₹200"
+- Cost-saving tips: City-specific transport and cost-saving recommendations
 
 Return JSON with key "budget_breakdown":
 {
@@ -49,7 +49,7 @@ Return JSON with key "budget_breakdown":
   }
 }
 
-All costs in INR (₹). Be realistic with Bangalore/Indian city pricing.
+All costs in INR (₹). Be realistic with pricing for the specified city, considering local price levels and cost of living.
 Respond ONLY with valid JSON, no markdown formatting."""
 
 
@@ -72,6 +72,7 @@ async def run_budget_optimizer(state: AgentState) -> AgentState:
             }
             state["agent_trace"].append({
                 "agent": "budget",
+                "city": state.get("city", "unknown"),
                 "status": "skipped",
                 "reason": "No experiences to price",
                 "latency_ms": 0,
@@ -116,6 +117,7 @@ IMPORTANT: Ensure total_estimate ≤ ₹{budget_max}. If experiences exceed budg
 
         state["agent_trace"].append({
             "agent": "budget",
+            "city": state.get("city", "unknown"),
             "status": "success",
             "total_estimate": total_estimate,
             "budget_max": budget_max,
@@ -127,11 +129,13 @@ IMPORTANT: Ensure total_estimate ≤ ₹{budget_max}. If experiences exceed budg
     except Exception as e:
         state["errors"].append({
             "agent": "budget",
+            "city": state.get("city", "unknown"),
             "error": str(e),
             "timestamp": start_time.isoformat(),
         })
         state["agent_trace"].append({
             "agent": "budget",
+            "city": state.get("city", "unknown"),
             "status": "error",
             "error": str(e),
             "latency_ms": (datetime.now() - start_time).total_seconds() * 1000,

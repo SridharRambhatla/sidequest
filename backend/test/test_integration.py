@@ -244,7 +244,7 @@ class TestCoordinatorIntegration:
         
         from agents.coordinator import _create_initial_state, _state_to_response
         
-        request = ItineraryRequest(query="test")
+        request = ItineraryRequest(query="test", city="bangalore")
         state = _create_initial_state(request)
         
         # Populate all agent outputs
@@ -296,7 +296,7 @@ class TestCoordinatorIntegration:
         
         from agents.coordinator import _state_to_response, _create_initial_state
         
-        state = _create_initial_state(ItineraryRequest(query="test"))
+        state = _create_initial_state(ItineraryRequest(query="test", city="bangalore"))
         state["discovered_experiences"] = MOCK_DISCOVERY_RESULT["discovered_experiences"]
         state["narrative_itinerary"] = "Test narrative"
         
@@ -433,7 +433,7 @@ class TestErrorHandling:
         
         from agents.coordinator import _create_initial_state, _state_to_response
         
-        state = _create_initial_state(ItineraryRequest(query="impossible query"))
+        state = _create_initial_state(ItineraryRequest(query="impossible query", city="bangalore"))
         
         # Simulate empty discovery
         state["discovered_experiences"] = []
@@ -457,7 +457,7 @@ class TestErrorHandling:
         
         from agents.coordinator import _create_initial_state, _state_to_response
         
-        state = _create_initial_state(ItineraryRequest(query="test"))
+        state = _create_initial_state(ItineraryRequest(query="test", city="bangalore"))
         
         # Simulate partial success
         state["discovered_experiences"] = MOCK_DISCOVERY_RESULT["discovered_experiences"]

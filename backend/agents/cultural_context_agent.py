@@ -34,6 +34,7 @@ async def run_cultural_context(state: AgentState) -> AgentState:
     cultural annotations. Optionally enriches with Reddit community insights.
     """
     start_time = datetime.now()
+    city = state.get("city", "unknown")
 
     try:
         experiences = state.get("discovered_experiences", [])
@@ -41,6 +42,7 @@ async def run_cultural_context(state: AgentState) -> AgentState:
             state["cultural_context"] = {}
             state["agent_trace"].append({
                 "agent": "cultural_context",
+                "city": city,
                 "status": "skipped",
                 "reason": "No experiences to contextualize",
                 "latency_ms": 0,
@@ -62,7 +64,6 @@ async def run_cultural_context(state: AgentState) -> AgentState:
                 from data_sources.reddit_simple import SimpleRedditClient, format_reddit_context
                 
                 reddit = SimpleRedditClient()
-                city = state.get("city", "")
                 posts = reddit.get_posts(city, f"things to do {city}", limit=5)
                 reddit_context = format_reddit_context(posts)
                 sources = [
@@ -74,7 +75,7 @@ async def run_cultural_context(state: AgentState) -> AgentState:
                     for p in posts
                 ]
             except Exception as e:
-                print(f"Reddit enrichment failed: {e}")
+                print(f"[Cultural Context Agent] Reddit enrichment failed for city={city}: {e}")
 
         user_prompt = f"""Add cultural context for these experiences in {state['city']}:
 
@@ -100,8 +101,11 @@ Be concise — 1-2 sentences per field only.
         
         state["cultural_context"] = cultural_context
 
+        print(f"[Cultural Context Agent] Added cultural context for {len(cultural_context)} experiences in city={city}")
+
         state["agent_trace"].append({
             "agent": "cultural_context",
+            "city": city,
             "status": "success",
             "contexts_added": len(state["cultural_context"]),
             "latency_ms": (datetime.now() - start_time).total_seconds() * 1000,
@@ -109,13 +113,16 @@ Be concise — 1-2 sentences per field only.
         })
 
     except Exception as e:
+        print(f"[Cultural Context Agent] Error for city={city}: {str(e)}")
         state["errors"].append({
             "agent": "cultural_context",
+            "city": city,
             "error": str(e),
             "timestamp": start_time.isoformat(),
         })
         state["agent_trace"].append({
             "agent": "cultural_context",
+            "city": city,
             "status": "error",
             "error": str(e),
             "latency_ms": (datetime.now() - start_time).total_seconds() * 1000,

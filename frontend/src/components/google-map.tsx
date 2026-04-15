@@ -20,10 +20,11 @@ interface ItineraryGoogleMapProps {
   focusedIndex: number | null;
   onMarkerClick?: (index: number) => void;
   className?: string;
+  cityCoordinates?: { lat: number; lng: number };
 }
 
 const mapContainerStyle = { width: '100%', height: '100%' };
-const defaultCenter = { lat: 12.9716, lng: 77.5946 };
+const defaultCenter = { lat: 12.9716, lng: 77.5946 }; // Fallback to Bangalore
 
 // Clean, minimal map style
 const mapStyles = [
@@ -57,6 +58,7 @@ export default function ItineraryGoogleMap({
   focusedIndex,
   onMarkerClick,
   className,
+  cityCoordinates,
 }: ItineraryGoogleMapProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
@@ -94,7 +96,7 @@ export default function ItineraryGoogleMap({
     
     service.findPlaceFromQuery(
       {
-        query: `${experience.name}, ${experience.location}, Bangalore`,
+        query: `${experience.name}, ${experience.location}`,
         fields: ['photos', 'name', 'formatted_address'],
       },
       (results, status) => {
@@ -111,6 +113,11 @@ export default function ItineraryGoogleMap({
       }
     );
   }, [selectedMarker, isLoaded, map, experiences]);
+
+  // Use provided city coordinates or fallback to default
+  const mapCenter = useMemo(() => {
+    return cityCoordinates || defaultCenter;
+  }, [cityCoordinates]);
 
   // Generate coordinates if not provided - uses deterministic hash for consistency
   const experiencesWithCoords = useMemo(() => {
@@ -132,8 +139,8 @@ export default function ItineraryGoogleMap({
       const radius = 0.015 + (hash % 100) / 4000; // 0.015 to 0.040 range
       
       const coordinates = {
-        lat: defaultCenter.lat + radius * Math.cos(angle),
-        lng: defaultCenter.lng + radius * Math.sin(angle),
+        lat: mapCenter.lat + radius * Math.cos(angle),
+        lng: mapCenter.lng + radius * Math.sin(angle),
       };
       
       // Cache for future use
@@ -141,7 +148,7 @@ export default function ItineraryGoogleMap({
       
       return { ...exp, coordinates };
     });
-  }, [experiences]);
+  }, [experiences, mapCenter]);
 
   const routePath = useMemo(() => {
     return experiencesWithCoords
@@ -193,7 +200,7 @@ export default function ItineraryGoogleMap({
     <div className={cn('h-full w-full', className)}>
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
-        center={defaultCenter}
+        center={mapCenter}
         zoom={13}
         onLoad={onLoad}
         options={{
@@ -308,7 +315,7 @@ export default function ItineraryGoogleMap({
                   className="w-full flex items-center justify-center gap-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-md py-1.5 transition-colors"
                   onClick={() => {
                     const exp = experiencesWithCoords[selectedMarker];
-                    const destination = encodeURIComponent(`${exp.name}, ${exp.location}, Bangalore`);
+                    const destination = encodeURIComponent(`${exp.name}, ${exp.location}`);
                     window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank');
                   }}
                 >
