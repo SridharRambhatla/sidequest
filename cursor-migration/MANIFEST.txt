@@ -1,0 +1,15 @@
+Cursor Migration Bundle — Hackathon
+Generated : Mon Mar  2 23:32:51 IST 2026
+Machine   : Siddanshs-MacBook-Air.local [siddansh]
+macOS     : 26.3
+
+Contents:
+  cursor-config/          — mcp.json, rules, skills-cursor, commands, plans
+  cursor-user-settings/   — settings.json, keybindings.json, snippets
+  extensions.json         — installed extension IDs
+  agent-transcripts/      — Hackathon + curex conversations
+  source-meta.txt         — source machine info for path remapping
+
+MCP Servers:
+  - firstclub-superset  (node path will be auto-patched)
+  - Figma               (re-authenticate in Cursor MCP panel)

@@ -1,0 +1,7 @@
+source_user=siddansh
+source_hostname=Siddanshs-MacBook-Air.local
+source_macos=26.3
+source_hackathon=/Users/siddansh/Hackathon
+packed_at=2026-03-02T18:02:51Z
+node_path=/Users/siddansh/.nvm/versions/node/v24.11.1/bin/node
+node_version=v24.11.1

@@ -1,0 +1,43 @@
+user:
+<user_query>
+Create a one liner project description for the project
+</user_query>
+
+assistant:
+[Thinking] The user wants a one-liner project description. I need to understand what this project does first. Let me look at the codebase structure and key files to understand the project.
+[Tool call] Read
+  path: /Users/siddansh/Hackathon/curex/README.md
+[Tool call] Glob
+  glob_pattern: **/package.json
+[Tool call] Read
+  path: /Users/siddansh/Hackathon/curex/backend/agents/discovery_agent.py
+
+[Tool result] Read
+
+[Tool result] Glob
+
+[Tool result] Read
+
+assistant:
+[Thinking] Based on the README and the discovery agent code, I now understand what this project is:
+
+**Sidequest** is a platform that transforms Instagram travel inspiration into narrative-driven, story-first travel itineraries using a multi-agent AI system (5 agents powered by Gemini). The key differentiator is "plot-first" - meaning it creates story-driven experiences rather than just lists of places.
+
+Key elements for the one-liner:
+- Transforms social media (Instagram) inspiration into itineraries
+- Plot-first / narrative-driven / story-driven experiences
+- Multi-agent AI architecture
+- Cultural context
+- Solo-friendly
+- Gemini/Vertex AI powered
+
+Let me craft a compelling one-liner:
+**Sidequest** transforms Instagram Reels into narrative-driven travel itineraries using a 5-agent AI system that discovers hyperlocal experiences, adds cultural context, and crafts story-first journeys — not just lists, but lore-rich adventures.
+
+**Shorter alternatives:**
+
+1. **15 words:** "AI-powered platform that turns Instagram travel inspiration into story-driven, culturally-grounded itineraries using multi-agent collaboration."
+
+2. **12 words:** "From Instagram Reel to plot-first itinerary — 5 AI agents, one immersive journey."
+
+3. **Tagline style (8 words):** "Turn social media scroll into story-first adventures."
