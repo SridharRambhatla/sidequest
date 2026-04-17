@@ -1,19 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  GoogleMap,
-  useJsApiLoader,
-  Marker,
-  Polyline,
-  InfoWindow,
-} from '@react-google-maps/api';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ExperienceItem } from '@/lib/types';
-import { MapPin, Navigation, Clock, IndianRupee, ImageIcon } from 'lucide-react';
+import { MapPin, Navigation, Clock, IndianRupee, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// Libraries needed for Places API
-const libraries: ("places")[] = ["places"];
+import dynamic from 'next/dynamic';
 
 interface ItineraryGoogleMapProps {
   experiences: ExperienceItem[];
@@ -23,174 +14,185 @@ interface ItineraryGoogleMapProps {
   cityCoordinates?: { lat: number; lng: number };
 }
 
-const mapContainerStyle = { width: '100%', height: '100%' };
-const defaultCenter = { lat: 12.9716, lng: 77.5946 }; // Fallback to Bangalore
+const defaultCenter = { lat: 12.9716, lng: 77.5946 };
 
-// Clean, minimal map style
-const mapStyles = [
-  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#e9e9e9' }] },
-  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5af' }] },
-];
-
-// Cache for place photos to avoid repeated API calls
-const placePhotoCache = new Map<string, string>();
-
-// Cache for generated coordinates to ensure consistency across reorders
-const coordinatesCache = new Map<string, { lat: number; lng: number }>();
-
-// Generate a deterministic hash from a string (for consistent coordinate generation)
 function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
+    hash = hash & hash;
   }
   return Math.abs(hash);
 }
 
-export default function ItineraryGoogleMap({
+const coordinatesCache = new Map<string, { lat: number; lng: number }>();
+
+function LeafletMapInner({
   experiences,
   focusedIndex,
   onMarkerClick,
   className,
   cityCoordinates,
 }: ItineraryGoogleMapProps) {
-  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const mapRef = useRef<any>(null);
   const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
-  const [placePhoto, setPlacePhoto] = useState<string | null>(null);
-  const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
+  const [L, setL] = useState<any>(null);
+  const [mapReady, setMapReady] = useState(false);
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries,
-  });
-
-  // Fetch place photo when a marker is selected
   useEffect(() => {
-    if (selectedMarker === null || !isLoaded || !map) {
-      setPlacePhoto(null);
-      return;
-    }
+    import('leaflet').then((leaflet) => {
+      setL(leaflet.default);
+    });
+  }, []);
 
-    const experience = experiences[selectedMarker];
-    if (!experience) return;
+  const mapCenter = cityCoordinates || defaultCenter;
 
-    const cacheKey = `${experience.name}-${experience.location}`;
-    
-    // Check cache first
-    if (placePhotoCache.has(cacheKey)) {
-      setPlacePhoto(placePhotoCache.get(cacheKey) || null);
-      return;
-    }
-
-    setIsLoadingPhoto(true);
-    setPlacePhoto(null);
-
-    // Use Places Service to find the place and get its photo
-    const service = new google.maps.places.PlacesService(map);
-    
-    service.findPlaceFromQuery(
-      {
-        query: `${experience.name}, ${experience.location}`,
-        fields: ['photos', 'name', 'formatted_address'],
-      },
-      (results, status) => {
-        setIsLoadingPhoto(false);
-        
-        if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
-          const place = results[0];
-          if (place.photos && place.photos.length > 0) {
-            const photoUrl = place.photos[0].getUrl({ maxWidth: 300, maxHeight: 200 });
-            setPlacePhoto(photoUrl);
-            placePhotoCache.set(cacheKey, photoUrl);
-          }
-        }
-      }
-    );
-  }, [selectedMarker, isLoaded, map, experiences]);
-
-  // Use provided city coordinates or fallback to default
-  const mapCenter = useMemo(() => {
-    return cityCoordinates || defaultCenter;
-  }, [cityCoordinates]);
-
-  // Generate coordinates if not provided - uses deterministic hash for consistency
   const experiencesWithCoords = useMemo(() => {
     return experiences.map((exp) => {
-      // If coordinates already exist, use them
       if (exp.coordinates?.lat && exp.coordinates?.lng) return exp;
-      
-      // Create a unique key for this experience
+
       const cacheKey = `${exp.name}-${exp.location}`;
-      
-      // Check cache first for consistent coordinates across reorders
       if (coordinatesCache.has(cacheKey)) {
         return { ...exp, coordinates: coordinatesCache.get(cacheKey)! };
       }
-      
-      // Generate deterministic coordinates based on experience name/location hash
+
       const hash = hashString(cacheKey);
-      const angle = (hash % 360) * (Math.PI / 180); // Convert to radians
-      const radius = 0.015 + (hash % 100) / 4000; // 0.015 to 0.040 range
-      
+      const angle = (hash % 360) * (Math.PI / 180);
+      const radius = 0.015 + (hash % 100) / 4000;
       const coordinates = {
         lat: mapCenter.lat + radius * Math.cos(angle),
         lng: mapCenter.lng + radius * Math.sin(angle),
       };
-      
-      // Cache for future use
       coordinatesCache.set(cacheKey, coordinates);
-      
       return { ...exp, coordinates };
     });
   }, [experiences, mapCenter]);
 
-  const routePath = useMemo(() => {
-    return experiencesWithCoords
-      .filter((exp) => exp.coordinates?.lat && exp.coordinates?.lng)
-      .map((exp) => ({ lat: exp.coordinates!.lat, lng: exp.coordinates!.lng }));
-  }, [experiencesWithCoords]);
-
-  const onLoad = useCallback((map: google.maps.Map) => {
-    setMap(map);
-    if (experiencesWithCoords.length > 0) {
-      const bounds = new google.maps.LatLngBounds();
-      experiencesWithCoords.forEach((exp) => {
-        if (exp.coordinates?.lat && exp.coordinates?.lng) {
-          bounds.extend({ lat: exp.coordinates.lat, lng: exp.coordinates.lng });
-        }
-      });
-      map.fitBounds(bounds, 60);
-    }
-  }, [experiencesWithCoords]);
-
   useEffect(() => {
-    if (map && focusedIndex !== null) {
-      const exp = experiencesWithCoords[focusedIndex];
-      if (exp?.coordinates?.lat && exp?.coordinates?.lng) {
-        map.panTo({ lat: exp.coordinates.lat, lng: exp.coordinates.lng });
-        map.setZoom(15);
-        setSelectedMarker(focusedIndex);
+    if (!L || !mapRef.current) return;
+    if (mapReady) return;
+
+    // Import CSS
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+
+    const container = mapRef.current;
+    if ((container as any)._leaflet_id) return;
+
+    const map = L.map(container, {
+      center: [mapCenter.lat, mapCenter.lng],
+      zoom: 13,
+      zoomControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    (container as any)._leaflet_map = map;
+    setMapReady(true);
+
+    return () => {
+      map.remove();
+      link.remove();
+    };
+  }, [L, mapCenter]);
+
+  // Add markers
+  useEffect(() => {
+    if (!L || !mapReady || !mapRef.current) return;
+    const map = (mapRef.current as any)._leaflet_map;
+    if (!map) return;
+
+    // Clear existing markers
+    map.eachLayer((layer: any) => {
+      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+        map.removeLayer(layer);
       }
-    }
-  }, [focusedIndex, experiencesWithCoords, map]);
+    });
 
-  if (loadError) {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-muted">
-        <p className="text-sm text-muted-foreground">Map unavailable</p>
-      </div>
+    const validExps = experiencesWithCoords.filter(
+      (e) => e.coordinates?.lat && e.coordinates?.lng
     );
-  }
 
-  if (!isLoaded) {
+    // Route line
+    if (validExps.length > 1) {
+      const path = validExps.map((e) => [e.coordinates!.lat, e.coordinates!.lng]);
+      L.polyline(path, { color: '#4A90A4', weight: 2, opacity: 0.6 }).addTo(map);
+    }
+
+    // Markers
+    validExps.forEach((exp, index) => {
+      const isActive = focusedIndex === index;
+      const size = isActive ? 28 : 22;
+      const color = isActive ? '#C4846C' : '#4A90A4';
+
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="
+          width:${size}px;height:${size}px;border-radius:50%;
+          background:${color};color:white;border:2px solid white;
+          display:flex;align-items:center;justify-content:center;
+          font-size:11px;font-weight:bold;box-shadow:0 2px 6px rgba(0,0,0,0.3);
+        ">${index + 1}</div>`,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+      });
+
+      const marker = L.marker([exp.coordinates!.lat, exp.coordinates!.lng], { icon })
+        .addTo(map);
+
+      marker.on('click', () => {
+        setSelectedMarker(index);
+        onMarkerClick?.(index);
+      });
+
+      const popup = L.popup({ maxWidth: 260, closeButton: true }).setContent(`
+        <div style="font-family:system-ui;min-width:200px">
+          <h3 style="font-size:14px;font-weight:600;margin:0 0 4px">${exp.name}</h3>
+          <p style="font-size:12px;color:#666;margin:0 0 6px">${exp.location}</p>
+          ${exp.description ? `<p style="font-size:11px;color:#555;margin:0 0 8px">${exp.description.slice(0, 100)}...</p>` : ''}
+          <div style="display:flex;gap:12px;font-size:11px;color:#666;margin-bottom:8px">
+            ${exp.timing ? `<span>${exp.timing}</span>` : ''}
+            ${exp.budget ? `<span>₹${exp.budget}</span>` : ''}
+          </div>
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${exp.coordinates!.lat},${exp.coordinates!.lng}"
+             target="_blank" rel="noopener"
+             style="display:block;text-align:center;background:#2563eb;color:white;
+                    padding:6px;border-radius:6px;text-decoration:none;font-size:12px">
+            Get Directions
+          </a>
+        </div>
+      `);
+      marker.bindPopup(popup);
+    });
+
+    // Fit bounds
+    if (validExps.length > 0) {
+      const bounds = L.latLngBounds(
+        validExps.map((e) => [e.coordinates!.lat, e.coordinates!.lng])
+      );
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  }, [L, mapReady, experiencesWithCoords, focusedIndex, onMarkerClick]);
+
+  // Pan to focused marker
+  useEffect(() => {
+    if (!L || !mapReady || !mapRef.current || focusedIndex === null) return;
+    const map = (mapRef.current as any)._leaflet_map;
+    const exp = experiencesWithCoords[focusedIndex];
+    if (map && exp?.coordinates?.lat && exp?.coordinates?.lng) {
+      map.setView([exp.coordinates.lat, exp.coordinates.lng], 15, { animate: true });
+    }
+  }, [focusedIndex, experiencesWithCoords, L, mapReady]);
+
+  if (!L) {
     return (
-      <div className="h-full w-full flex items-center justify-center bg-muted">
+      <div className={cn('h-full w-full flex items-center justify-center bg-muted', className)}>
         <MapPin className="h-5 w-5 text-muted-foreground animate-pulse" />
       </div>
     );
@@ -198,135 +200,11 @@ export default function ItineraryGoogleMap({
 
   return (
     <div className={cn('h-full w-full', className)}>
-      <GoogleMap
-        mapContainerStyle={mapContainerStyle}
-        center={mapCenter}
-        zoom={13}
-        onLoad={onLoad}
-        options={{
-          styles: mapStyles,
-          disableDefaultUI: true,
-          zoomControl: true,
-          zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
-        }}
-      >
-        {/* Route */}
-        {routePath.length > 1 && (
-          <Polyline
-            path={routePath}
-            options={{ strokeColor: '#4A90A4', strokeOpacity: 0.6, strokeWeight: 2 }}
-          />
-        )}
-
-        {/* Markers */}
-        {experiencesWithCoords.map((experience, index) => {
-          if (!experience.coordinates?.lat || !experience.coordinates?.lng) return null;
-          const isActive = focusedIndex === index;
-
-          return (
-            <Marker
-              key={index}
-              position={{ lat: experience.coordinates.lat, lng: experience.coordinates.lng }}
-              onClick={() => { setSelectedMarker(index); onMarkerClick?.(index); }}
-              label={{ text: String(index + 1), color: 'white', fontWeight: 'bold', fontSize: '12px' }}
-              icon={{
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: isActive ? 16 : 12,
-                fillColor: isActive ? '#C4846C' : '#4A90A4',
-                fillOpacity: 1,
-                strokeColor: 'white',
-                strokeWeight: 2,
-              }}
-            />
-          );
-        })}
-
-        {/* Info window */}
-        {selectedMarker !== null && experiencesWithCoords[selectedMarker] && (
-          <InfoWindow
-            position={{
-              lat: experiencesWithCoords[selectedMarker].coordinates!.lat,
-              lng: experiencesWithCoords[selectedMarker].coordinates!.lng,
-            }}
-            onCloseClick={() => { setSelectedMarker(null); setPlacePhoto(null); }}
-            options={{ maxWidth: 320 }}
-          >
-            <div className="min-w-[280px] max-w-[300px]">
-              {/* Place Image */}
-              <div className="w-full h-[140px] bg-gray-100 rounded-t-lg overflow-hidden mb-2 -mt-2 -mx-2" style={{ width: 'calc(100% + 16px)' }}>
-                {isLoadingPhoto ? (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="animate-pulse flex flex-col items-center gap-2">
-                      <ImageIcon className="h-8 w-8 text-gray-300" />
-                      <span className="text-xs text-gray-400">Loading image...</span>
-                    </div>
-                  </div>
-                ) : placePhoto ? (
-                  <img 
-                    src={placePhoto} 
-                    alt={experiencesWithCoords[selectedMarker].name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
-                    <div className="text-center">
-                      <MapPin className="h-8 w-8 text-blue-300 mx-auto mb-1" />
-                      <span className="text-xs text-blue-400">{experiencesWithCoords[selectedMarker].category}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="px-1">
-                {/* Title & Location */}
-                <h3 className="font-semibold text-sm text-gray-900 mb-0.5">
-                  {experiencesWithCoords[selectedMarker].name}
-                </h3>
-                <p className="text-xs text-gray-500 mb-2">
-                  {experiencesWithCoords[selectedMarker].location}
-                </p>
-
-                {/* Description */}
-                {experiencesWithCoords[selectedMarker].description && (
-                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                    {experiencesWithCoords[selectedMarker].description}
-                  </p>
-                )}
-
-                {/* Timing & Cost */}
-                <div className="flex items-center gap-3 mb-2 text-xs">
-                  {experiencesWithCoords[selectedMarker].timing && (
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <Clock className="h-3 w-3 text-blue-500" />
-                      <span>{experiencesWithCoords[selectedMarker].timing}</span>
-                    </div>
-                  )}
-                  {experiencesWithCoords[selectedMarker].budget > 0 && (
-                    <div className="flex items-center gap-0.5 text-gray-600">
-                      <IndianRupee className="h-3 w-3 text-green-500" />
-                      <span>{experiencesWithCoords[selectedMarker].budget}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Directions Button */}
-                <button
-                  className="w-full flex items-center justify-center gap-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-md py-1.5 transition-colors"
-                  onClick={() => {
-                    const exp = experiencesWithCoords[selectedMarker];
-                    const destination = encodeURIComponent(`${exp.name}, ${exp.location}`);
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank');
-                  }}
-                >
-                  <Navigation className="h-3 w-3" />
-                  Get Directions
-                </button>
-              </div>
-            </div>
-          </InfoWindow>
-        )}
-      </GoogleMap>
+      <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
     </div>
   );
+}
+
+export default function ItineraryGoogleMap(props: ItineraryGoogleMapProps) {
+  return <LeafletMapInner {...props} />;
 }

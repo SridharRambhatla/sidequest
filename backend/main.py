@@ -35,6 +35,12 @@ from agents.coordinator import run_workflow
 from logging_system import start_global_logger, stop_global_logger, get_log_config
 from agents.discovery_agent import run_discovery_agent
 from data.curated_experiences import get_curated_experiences, CURATED_EXPERIENCES
+from db.session import init_db, close_db
+from routes.itineraries import router as itineraries_router
+from routes.auth import router as auth_router
+from routes.experiences import router as experiences_router
+from routes.booking import router as booking_router
+from routes.payments import router as payments_router
 
 
 @asynccontextmanager
@@ -53,6 +59,10 @@ async def lifespan(app: FastAPI):
         print("⚠️  GOOGLE_CLOUD_PROJECT not set — Vertex AI calls will fail. "
               "Set it in .env for full functionality.")
     
+    # Initialize database
+    await init_db()
+    print("✅ Database initialized")
+
     # Initialize logging system
     await start_global_logger()
     log_config = get_log_config()
@@ -61,9 +71,10 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    # Cleanup logging system
+    # Cleanup
     await stop_global_logger()
-    print("✅ Agent logging system stopped")
+    await close_db()
+    print("✅ Shutdown complete")
 
 
 app = FastAPI(
@@ -73,13 +84,26 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow frontend dev server
+# Register routers
+app.include_router(itineraries_router)
+app.include_router(auth_router)
+app.include_router(experiences_router)
+app.include_router(booking_router)
+app.include_router(payments_router)
+
+# CORS
+import os as _os
+_cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+_extra_origin = _os.getenv("CORS_ORIGIN")
+if _extra_origin:
+    _cors_origins.append(_extra_origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

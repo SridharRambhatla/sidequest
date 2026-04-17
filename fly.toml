@@ -1,0 +1,25 @@
+app = 'sidequest-api'
+primary_region = 'bom'
+
+[build]
+  dockerfile = 'Dockerfile.backend'
+
+[env]
+  BACKEND_PORT = '8000'
+  BACKEND_HOST = '0.0.0.0'
+  GOOGLE_CLOUD_LOCATION = 'us-central1'
+  AGENT_LOG_LEVEL = 'INFO'
+  AGENT_LOG_FORMAT = 'json'
+  AGENT_LOG_SANITIZE = 'true'
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1

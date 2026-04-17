@@ -25,6 +25,8 @@ import { ItineraryResponse, ExperienceItem, InputFormState, CulturalContext, Soc
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { saveItinerary } from '@/lib/api';
 
 const ItineraryMap = dynamic(() => import('@/components/google-map'), {
   ssr: false,
@@ -229,6 +231,9 @@ export default function ResultsPage() {
     sessionStorage.setItem('sidequest-result', JSON.stringify(updated));
   };
 
+  const { data: session } = useSession();
+  const [savedId, setSavedId] = useState<string | null>(null);
+
   const handleShare = async () => {
     if (navigator.share) {
       try { await navigator.share({ title: 'My Sidequest', url: window.location.href }); }
@@ -236,6 +241,43 @@ export default function ResultsPage() {
     } else {
       await navigator.clipboard.writeText(window.location.href);
       toast.success('Link copied');
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!itinerary) return;
+    const lines = itinerary.experiences.map(
+      (e, i) => `${i + 1}. ${e.name} — ${e.timing} (₹${e.budget})`
+    );
+    const text = `🗺️ My Sidequest Itinerary\n\n${lines.join('\n')}\n\nTotal: ₹${totalBudget.toLocaleString('en-IN')}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const handleSave = async () => {
+    if (!session) {
+      toast.error('Sign in to save itineraries');
+      return;
+    }
+    if (!itinerary) return;
+    try {
+      const result = await saveItinerary({
+        query: formState?.query || '',
+        city: formState?.city || '',
+        num_days: itinerary.num_days,
+        narrative_itinerary: itinerary.narrative_itinerary,
+        experiences: itinerary.experiences,
+        cultural_context: itinerary.cultural_context,
+        budget_breakdown: itinerary.budget_breakdown,
+        social_scaffolding: itinerary.social_scaffolding,
+        collision_suggestion: itinerary.collision_suggestion,
+        agent_trace: itinerary.agent_trace,
+        session_id: itinerary.session_id,
+        request_params: formState || {},
+      });
+      setSavedId(result.id);
+      toast.success('Itinerary saved!');
+    } catch {
+      toast.error('Failed to save');
     }
   };
 
@@ -296,9 +338,17 @@ export default function ResultsPage() {
                 />
               </SheetContent>
             </Sheet>
-            <Button variant="ghost" size="icon" onClick={handleShare}>
+            <Button variant="ghost" size="icon" onClick={handleWhatsAppShare} title="Share on WhatsApp">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.636-1.215A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.168 0-4.19-.586-5.932-1.608l-.425-.253-2.75.721.734-2.682-.278-.442A9.778 9.778 0 012.182 12 9.818 9.818 0 0112 2.182 9.818 9.818 0 0121.818 12 9.818 9.818 0 0112 21.818z"/></svg>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleShare} title="Share link">
               <Share2 className="h-4 w-4" />
             </Button>
+            {!savedId && (
+              <Button variant="outline" size="sm" onClick={handleSave}>
+                Save
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -370,7 +420,13 @@ export default function ResultsPage() {
                   max: formState?.budgetMax || 5000,
                 }}
               />
-              <Button className="w-full mt-3" onClick={() => toast.info('Booking coming soon')}>
+              <Button className="w-full mt-3" onClick={() => {
+                const exp = itinerary.experiences[0];
+                if (exp) {
+                  const q = encodeURIComponent(`${exp.name}, ${formState?.city || ''}`);
+                  window.open(`https://www.google.com/maps/search/${q}`, '_blank');
+                }
+              }}>
                 Book experiences
               </Button>
             </div>
@@ -381,7 +437,13 @@ export default function ResultsPage() {
                   <span className="text-sm text-muted-foreground">Total budget</span>
                   <span className="text-lg font-semibold">₹{totalBudget.toLocaleString('en-IN')}</span>
                 </div>
-                <Button className="w-full" onClick={() => toast.info('Booking coming soon')}>
+                <Button className="w-full" onClick={() => {
+                const exp = itinerary.experiences[0];
+                if (exp) {
+                  const q = encodeURIComponent(`${exp.name}, ${formState?.city || ''}`);
+                  window.open(`https://www.google.com/maps/search/${q}`, '_blank');
+                }
+              }}>
                   Book experiences
                 </Button>
               </CardContent>
@@ -425,7 +487,13 @@ export default function ResultsPage() {
           >
             <Wallet className="h-4 w-4" />
           </Button>
-          <Button className="flex-1" onClick={() => toast.info('Booking coming soon')}>
+          <Button className="flex-1" onClick={() => {
+                const exp = itinerary.experiences[0];
+                if (exp) {
+                  const q = encodeURIComponent(`${exp.name}, ${formState?.city || ''}`);
+                  window.open(`https://www.google.com/maps/search/${q}`, '_blank');
+                }
+              }}>
             Book · ₹{totalBudget.toLocaleString('en-IN')}
           </Button>
         </div>

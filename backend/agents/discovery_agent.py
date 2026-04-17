@@ -14,6 +14,7 @@ load_dotenv()
 # Import geocoding utility
 from utils.geocoding import geocode_experiences
 from utils.llm_caller import call_llm
+from tools.foursquare import search_places, fsq_to_experience
 
 
 # --- DATE PARSING UTILITY ---
@@ -402,10 +403,40 @@ DAY WINDOW: Default day is {start_time} – 21:00.
 - Assign "start_time" (HH:MM) to each experience so the day flows 06:00–21:00.
 - Aim for 5-8 experiences with 15-30 min travel time between stops."""
 
+    # Fetch real places from Foursquare
+    fsq_context = ""
+    fsq_places = []
+    from config.cities import get_supported_cities
+    city_obj = next((c for c in get_supported_cities() if c.id == city.lower()), None)
+    city_lat = city_obj.lat if city_obj else None
+    city_lng = city_obj.lng if city_obj else None
+
+    if os.getenv("FOURSQUARE_API_KEY"):
+        try:
+            logger.info("📍 Fetching real places from Foursquare...")
+            fsq_raw = await search_places(
+                query=user_query,
+                city=city,
+                lat=city_lat,
+                lng=city_lng,
+                limit=15,
+            )
+            fsq_places = [fsq_to_experience(p, i) for i, p in enumerate(fsq_raw)]
+            if fsq_places:
+                place_names = [p["name"] for p in fsq_places]
+                fsq_context = f"""
+REAL VERIFIED PLACES (from Foursquare — these are REAL venues that exist):
+{json.dumps([{"name": p["name"], "category": p["category_detail"], "location": p["location"]["address"], "rating": p.get("rating")} for p in fsq_places], indent=2)}
+
+IMPORTANT: Use these real places as the FOUNDATION of your response. You may add 2-3 additional hidden gems from your knowledge, but the majority of experiences MUST come from this verified list. For each real place, use its exact name and location. Add your own vivid descriptions, lore, and timing recommendations."""
+                logger.info(f"✅ Found {len(fsq_places)} real places from Foursquare")
+        except Exception as e:
+            logger.warning(f"⚠️ Foursquare fetch failed: {e}")
+
     # Optional: Fetch Reddit posts for enrichment
     reddit_context = ""
     sources = []
-    
+
     if os.getenv("ENABLE_REDDIT_ENRICHMENT", "false").lower() == "true":
         try:
             from data_sources.reddit_simple import SimpleRedditClient, format_reddit_context
@@ -425,9 +456,11 @@ DAY WINDOW: Default day is {start_time} – 21:00.
     Target City: {city}
     Budget Range: ₹{budget_range}
     Number of Days: {num_days}{interest_context}{time_context}{date_context}{duration_context}
-    
+
+    {fsq_context}
+
     {reddit_context}
-    
+
     Find specific, actionable experiences in {city} that fit the 'Sidequest' vibe (Plot-first, meaningful, local).
     """
 
@@ -468,13 +501,31 @@ DAY WINDOW: Default day is {start_time} – 21:00.
                 if 'sources' not in exp:
                     exp['sources'] = sources[:3]  # Attach up to 3 sources per experience
         
-        # Geocode all experiences to add coordinates
-        if result_json.get('discovered_experiences'):
-            logger.info("📍 Geocoding experience locations...")
-            result_json['discovered_experiences'] = geocode_experiences(
-                result_json['discovered_experiences'],
-                city=city
-            )
+        # Merge Foursquare data into discovered experiences
+        if fsq_places and result_json.get('discovered_experiences'):
+            fsq_by_name = {p["name"].lower(): p for p in fsq_places}
+            for exp in result_json['discovered_experiences']:
+                match = fsq_by_name.get(exp.get("name", "").lower())
+                if match:
+                    exp["fsq_id"] = match.get("fsq_id", "")
+                    exp["coordinates"] = match["location"]["coordinates"]
+                    exp["image_url"] = match.get("image_url", "")
+                    exp["tel"] = match.get("tel")
+                    exp["website"] = match.get("website")
+                    exp["rating_fsq"] = match.get("rating")
+
+        # Geocode experiences that don't have coordinates from Foursquare
+        needs_geocoding = [
+            e for e in result_json.get('discovered_experiences', [])
+            if not e.get("coordinates") or not e["coordinates"].get("lat")
+        ]
+        if needs_geocoding:
+            logger.info(f"📍 Geocoding {len(needs_geocoding)} experience locations...")
+            geocoded = geocode_experiences(needs_geocoding, city=city)
+            geo_map = {e["name"]: e for e in geocoded}
+            for exp in result_json['discovered_experiences']:
+                if exp["name"] in geo_map and (not exp.get("coordinates") or not exp["coordinates"].get("lat")):
+                    exp["coordinates"] = geo_map[exp["name"]].get("coordinates", {})
             logger.info("✅ Geocoding complete")
         
         # Post-process: Filter experiences by operating days if date constraint was applied

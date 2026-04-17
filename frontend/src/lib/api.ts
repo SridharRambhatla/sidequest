@@ -36,6 +36,36 @@ export interface DiscoverResponse {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+let cachedToken: string | null = null;
+let tokenExpiry = 0;
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (typeof window === 'undefined') return headers;
+  try {
+    const now = Date.now();
+    if (!cachedToken || now > tokenExpiry) {
+      const res = await fetch('/api/token');
+      const data = await res.json();
+      if (data?.token) {
+        cachedToken = data.token;
+        tokenExpiry = now + 4 * 60 * 1000; // cache 4 min
+      }
+    }
+    if (cachedToken) {
+      headers['Authorization'] = `Bearer ${cachedToken}`;
+    }
+  } catch {
+    // No auth available
+  }
+  return headers;
+}
+
+export function clearAuthCache() {
+  cachedToken = null;
+  tokenExpiry = 0;
+}
+
 /**
  * Convert frontend form state to API request format
  */
@@ -69,11 +99,10 @@ export async function generateItinerary(
     throw new Error('City parameter is required for itinerary generation');
   }
 
+  const headers = await getAuthHeaders();
   const response = await fetch(`${API_BASE}/api/generate-itinerary`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(request),
   });
 
@@ -210,4 +239,65 @@ export async function discoverExperiences(
   }
 
   return response.json();
+}
+
+
+// ──────────────────────────────────────────────
+// Itinerary CRUD (authenticated)
+// ──────────────────────────────────────────────
+
+export interface SavedItinerary {
+  id: string;
+  title: string;
+  city: string;
+  num_days: number;
+  query: string;
+  is_public: boolean;
+  created_at: string;
+  experience_count: number;
+}
+
+export async function listItineraries(): Promise<SavedItinerary[]> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/itineraries`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch itineraries');
+  const data = await res.json();
+  return data.itineraries;
+}
+
+export async function getItinerary(id: string): Promise<any> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/itineraries/${id}`, { headers });
+  if (!res.ok) throw new Error('Failed to fetch itinerary');
+  return res.json();
+}
+
+export async function saveItinerary(data: Record<string, any>): Promise<{ id: string; title: string }> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/itineraries`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to save itinerary');
+  return res.json();
+}
+
+export async function deleteItinerary(id: string): Promise<void> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) throw new Error('Failed to delete itinerary');
+}
+
+export async function toggleItineraryPublic(id: string, isPublic: boolean): Promise<void> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ is_public: isPublic }),
+  });
+  if (!res.ok) throw new Error('Failed to update itinerary');
 }

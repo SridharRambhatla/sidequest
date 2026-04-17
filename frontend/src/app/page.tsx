@@ -32,6 +32,7 @@ import {
   WeatherWidget,
 } from '@/components/discovery';
 import { useExperiences } from '@/hooks/useExperiences';
+import { UserMenu } from '@/components/user-menu';
 
 // Quick filter options for explore section
 const quickFilters = [
@@ -158,12 +159,15 @@ export default function HomePage() {
           <Sparkles className="h-5 w-5 text-primary" />
           <span className="font-semibold text-lg">Sidequest</span>
         </div>
-        <a href="#explore">
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-            <Compass className="h-4 w-4" />
-            Explore
-          </Button>
-        </a>
+        <div className="flex items-center gap-2">
+          <a href="#explore">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+              <Compass className="h-4 w-4" />
+              Explore
+            </Button>
+          </a>
+          <UserMenu />
+        </div>
       </header>
 
       {/* Hero */}
