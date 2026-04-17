@@ -58,3 +58,10 @@ htmlcov/
 
 # Benchmarks
 .benchmarks/
+
+# Cursor migration (contains secrets in transcripts)
+cursor-migration/
+
+# Local dev
+backend/.venv/
+backend/logs/
